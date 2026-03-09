@@ -13,6 +13,8 @@
 #include <Windows.h>
 #endif
 
+#include "scanner.h"
+
 // Maximum size of user's input string
 #define MAX_INPUT_SIZE 512
 
@@ -29,11 +31,26 @@ int main(void)
 		fgets(buf, MAX_INPUT_SIZE, stdin);
 
 		buf[strlen(buf)-1] = '\0'; // strip the newline
-		printf("%s\n", buf);
 
 		if (strcmp(buf, "cls") == 0) {
 			clear_stdout();
+			continue;
 		}
+		if (strcmp(buf, "q") == 0) {
+			running = false;
+			continue;
+		}
+
+		token_list_t tokens = token_scanner_scan(buf);
+
+		for (int i = 0; i < tokens.len; i++)
+		{
+			token_print(tokens.tokens[i]);
+		}
+
+		token_list_delete(&tokens);
+
+		buf[0] = '\0'; // clear the buffer
 	}
 
 	return 0;

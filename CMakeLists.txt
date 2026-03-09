@@ -17,7 +17,10 @@ project ("FlowScript")
 
 set(SOURCES
   source/main.c
+  source/scanner.c
 )
+
+add_compile_definitions(USE_NEW_CACHE _CRT_SECURE_NO_WARNINGS)
 
 # Add source to this project's executable.
 add_executable (FlowScript ${SOURCES})
