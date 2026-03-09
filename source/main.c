@@ -13,6 +13,11 @@
 #include <Windows.h>
 #endif
 
+#ifdef _DEBUG
+#define _CRTDBG_MAP_ALLOC
+#endif
+#include <crtdbg.h>
+
 #include "scanner.h"
 
 // Maximum size of user's input string
@@ -22,8 +27,15 @@ static bool running = true;
 
 static void clear_stdout();
 
+static void init_crtdbg();
+static void dump_crtdbg();
+
 int main(void)
 {
+	#ifdef _DEBUG
+	init_crtdbg();
+	#endif
+
 	char buf[MAX_INPUT_SIZE];
 	while (running)
 	{
@@ -53,6 +65,10 @@ int main(void)
 		buf[0] = '\0'; // clear the buffer
 	}
 
+	#ifdef _DEBUG
+	dump_crtdbg();
+	#endif
+
 	return 0;
 }
 
@@ -78,4 +94,20 @@ static void clear_stdout()
 	SetConsoleCursorPosition(console_handle, cursor);
 
 	#endif
+}
+
+static void init_crtdbg()
+{
+    _CrtSetReportMode( _CRT_WARN, _CRTDBG_MODE_FILE );
+    _CrtSetReportFile( _CRT_WARN, _CRTDBG_FILE_STDOUT );
+    _CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_FILE );
+    _CrtSetReportFile( _CRT_ERROR, _CRTDBG_FILE_STDOUT );
+    _CrtSetReportMode( _CRT_ASSERT, _CRTDBG_MODE_FILE );
+    _CrtSetReportFile( _CRT_ASSERT, _CRTDBG_FILE_STDOUT );
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+}
+
+static void dump_crtdbg()
+{
+	_CrtDumpMemoryLeaks();
 }
