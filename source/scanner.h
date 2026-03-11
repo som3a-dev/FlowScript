@@ -42,6 +42,7 @@ typedef struct
 {
 	token_t* tokens;
 	int len;
+	bool has_error;
 } token_list_t;
 
 token_list_t token_scanner_scan(const char* input);
