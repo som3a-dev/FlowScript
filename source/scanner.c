@@ -20,12 +20,15 @@ typedef struct
 	token_t* tokens;
 	int tokens_count;
 
+	// index of the starting character of the token being scanned
+	int start;
+	// index of the current character of the token being scanned
 	int current;
 	int line;	
 } token_scanner_t;
 
-static void add_token(token_scanner_t* scan, token_t token);
 static void scan_token(token_scanner_t* scan);
+static void add_token(token_scanner_t* scan, token_type_t type);
 
 token_list_t token_scanner_scan(const char* input)
 {
@@ -69,88 +72,65 @@ void token_list_delete(token_list_t* list)
 static void scan_token(token_scanner_t* scan)
 {
 	char c = scan->str[scan->current];
+	scan->start =scan->current;
+	scan->current++;
 
 	token_t token = {0};
     token.line = 1;
 	switch (c)
 	{
 		case '(': {
-			token.type = TOKEN_LEFT_PAREN;
-			token.lexem = calloc(2, sizeof(char));
-			token.lexem[0] = c;
-			scan->current++;
+			add_token(scan, TOKEN_LEFT_PAREN);
 		} break;
 		case ')': {
-			token.type = TOKEN_RIGHT_PAREN;
-			token.lexem = calloc(2, sizeof(char));
-			token.lexem[0] = c;
-			scan->current++;
+			add_token(scan, TOKEN_RIGHT_PAREN);
 		} break;
 		case '{': {
-			token.type = TOKEN_LEFT_BRACE;
-			token.lexem = calloc(2, sizeof(char));
-			token.lexem[0] = c;
-			scan->current++;
+			add_token(scan, TOKEN_LEFT_BRACE);
 		} break;
 		case '}': {
-			token.type = TOKEN_RIGHT_BRACE;
-			token.lexem = calloc(2, sizeof(char));
-			token.lexem[0] = c;
-			scan->current++;
+			add_token(scan, TOKEN_RIGHT_BRACE);
 		} break;
 
 		case ',': {
-			token.type = TOKEN_COMMA;
-			token.lexem = calloc(2, sizeof(char));
-			token.lexem[0] = c;
-			scan->current++;
+			add_token(scan, TOKEN_COMMA);
 		} break;
 		case '.': {
-			token.type = TOKEN_DOT;
-			token.lexem = calloc(2, sizeof(char));
-			token.lexem[0] = c;
-			scan->current++;
+			add_token(scan, TOKEN_DOT);
 		} break;
 
 		case '-': {
-			token.type = TOKEN_MINUS;
-			token.lexem = calloc(2, sizeof(char));
-			token.lexem[0] = c;
-			scan->current++;
+			add_token(scan, TOKEN_MINUS);
 		} break;
 		case '+': {
-			token.type = TOKEN_PLUS;
-			token.lexem = calloc(2, sizeof(char));
-			token.lexem[0] = c;
-			scan->current++;
+			add_token(scan, TOKEN_PLUS);
 		} break;
 		case '*': {
-			token.type = TOKEN_STAR;
-			token.lexem = calloc(2, sizeof(char));
-			token.lexem[0] = c;
-			scan->current++;
+			add_token(scan, TOKEN_STAR);
 		} break;
 
 		case ';': {
-			token.type = TOKEN_SEMICOLON;
-			token.lexem = calloc(2, sizeof(char));
-			token.lexem[0] = c;
-			scan->current++;
+			add_token(scan, TOKEN_SEMICOLON);
 		} break;
 	}
 
-	if (token.type != TOKEN_NONE) {
-		add_token(scan, token);
-	}
-	else {
-		scan->current++;
+		default: {
+			printf("ERROR | Line: %d | Unexpected Character '%c'\n", scan->line, c);
+		} break;
 	}
 }
 
-static void add_token(token_scanner_t* scan, token_t token)
+static void add_token(token_scanner_t* scan, token_type_t type)
 {
-	scan->tokens_count++;
+	token_t token = {0};
+	token.type = type;
+	token.line = 1;
 
+	size_t lexem_len = scan->current - scan->start;
+	token.lexem = calloc(lexem_len * sizeof(char), lexem_len + 1);
+	memcpy(token.lexem, scan->str + scan->start, lexem_len);
+
+	scan->tokens_count++;
 	if (scan->tokens == NULL) {
 		scan->tokens = malloc(sizeof(token_t) * scan->tokens_count);
 	}
