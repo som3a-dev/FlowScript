@@ -31,6 +31,9 @@ typedef struct
 
 static void scan_token(token_scanner_t* scan);
 static void add_token(token_scanner_t* scan, token_type_t type);
+static void add_double_token(
+	token_scanner_t* scan, char expected_next,
+	token_type_t single_type, token_type_t double_type);
 
 token_list_t token_scanner_scan(const char* input)
 {
@@ -115,7 +118,22 @@ static void scan_token(token_scanner_t* scan)
 		case ';': {
 			add_token(scan, TOKEN_SEMICOLON);
 		} break;
-	}
+
+		case '!': {
+			add_double_token(scan, '=', TOKEN_BANG, TOKEN_BANG_EQUAL);
+		} break;
+
+		case '=': {
+			add_double_token(scan, '=', TOKEN_EQUAL, TOKEN_EQUAL_EQUAL);
+		} break;
+
+		case '<': {
+			add_double_token(scan, '=', TOKEN_LESS, TOKEN_LESS_EQUAL);
+		} break;
+
+		case '>': {
+			add_double_token(scan, '=', TOKEN_GREATER, TOKEN_GREATER_EQUAL);
+		} break;
 
 		default: {
 			printf("ERROR | Line: %d | Unexpected Character '%c'\n", scan->line, c);
@@ -143,4 +161,17 @@ static void add_token(token_scanner_t* scan, token_type_t type)
 	}
 
 	scan->tokens[scan->tokens_count-1] = token;
+}
+
+static void add_double_token(
+	token_scanner_t* scan, char expected_next,
+	token_type_t single_type, token_type_t double_type)
+{
+	if (scan->str[scan->current] == expected_next) {
+		scan->current++;
+		add_token(scan, double_type);
+	}
+	else {
+		add_token(scan, single_type);
+	}
 }
