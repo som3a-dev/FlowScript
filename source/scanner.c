@@ -34,6 +34,7 @@ static void add_token(token_scanner_t* scan, token_type_t type);
 static void add_double_token(
 	token_scanner_t* scan, char expected_next,
 	token_type_t single_type, token_type_t double_type);
+static bool at_end(const token_scanner_t* scan);
 
 token_list_t token_scanner_scan(const char* input)
 {
@@ -135,6 +136,18 @@ static void scan_token(token_scanner_t* scan)
 			add_double_token(scan, '=', TOKEN_GREATER, TOKEN_GREATER_EQUAL);
 		} break;
 
+		case '/': {
+			if (scan->str[scan->current] == '/') {
+				while ((scan->str[scan->current] != '\n') && (!at_end(scan)))
+				{
+					scan->current++;
+				}
+			}
+			else {
+				add_token(scan, TOKEN_SLASH);
+			}
+		} break;
+
 		default: {
 			printf("ERROR | Line: %d | Unexpected Character '%c'\n", scan->line, c);
 			scan->has_error = true;
@@ -174,4 +187,9 @@ static void add_double_token(
 	else {
 		add_token(scan, single_type);
 	}
+}
+
+static bool at_end(const token_scanner_t* scan)
+{
+	return !(scan->current < scan->str_len);
 }
