@@ -148,6 +148,17 @@ static void scan_token(token_scanner_t* scan)
 			}
 		} break;
 
+		case ' ':
+		case '\r':
+		case '\t': {
+			break;
+		}
+
+		case '\n': {
+			scan->line++;
+			break;
+		}
+
 		default: {
 			printf("ERROR | Line: %d | Unexpected Character '%c'\n", scan->line, c);
 			scan->has_error = true;
