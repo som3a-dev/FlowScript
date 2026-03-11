@@ -25,6 +25,8 @@ typedef struct
 	// index of the current character of the token being scanned
 	int current;
 	int line;	
+
+	bool has_error;
 } token_scanner_t;
 
 static void scan_token(token_scanner_t* scan);
@@ -46,6 +48,7 @@ token_list_t token_scanner_scan(const char* input)
 	token_list_t list;
 	list.tokens = scan.tokens;
 	list.len = scan.tokens_count;
+	list.has_error = scan.has_error;
 
 	free(scan.str);
 
@@ -116,6 +119,7 @@ static void scan_token(token_scanner_t* scan)
 
 		default: {
 			printf("ERROR | Line: %d | Unexpected Character '%c'\n", scan->line, c);
+			scan->has_error = true;
 		} break;
 	}
 }
