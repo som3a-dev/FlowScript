@@ -157,6 +157,22 @@ static void scan_token(token_scanner_t* scan)
 			scan->line++;
 		} break;
 
+		case '"': {
+			scan->start = scan->current; // start from the character after the first '"'
+			while (scan->str[scan->current] != '"' && (!at_end(scan)))
+			{
+				scan->current++;
+			}
+
+			if (!at_end(scan)) {
+				add_token(scan, TOKEN_BANG);
+				scan->current++; // skip the last '"'
+			}
+			else {
+				printf("ERROR | Line: %d | String missing end quote\n", scan->line);
+			}
+		} break;
+
 		default: {
 			printf("ERROR | Line: %d | Unexpected Character '%c'\n", scan->line, c);
 			scan->has_error = true;
@@ -171,7 +187,7 @@ static void add_token(token_scanner_t* scan, token_type_t type)
 	token.line = 1;
 
 	size_t lexem_len = scan->current - scan->start;
-	token.lexem = calloc(lexem_len * sizeof(char), lexem_len + 1);
+	token.lexem = calloc(lexem_len + 1, sizeof(char));
 	memcpy(token.lexem, scan->str + scan->start, lexem_len);
 
 	scan->tokens_count++;
