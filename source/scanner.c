@@ -164,6 +164,25 @@ static void scan_token(token_scanner_t* scan)
 					scan->current++;
 				}
 			}
+			else if (scan->str[scan->current] == '*') {
+				bool found_comment_end = false;
+				while (scan->current < (scan->str_len - 1)) {
+					if (scan->str[scan->current] == '*' && (scan->str[scan->current + 1] == '/')) {
+						found_comment_end = true;
+						break;
+					}
+					scan->current++;
+				}
+
+				if (!found_comment_end) {
+					printf("ERROR | Line: %d | Unterminated multi line comment\n", scan->line);
+					scan->has_error = true;
+				}
+				else {
+					// Skip the ending '*/'
+					scan->current += 2;
+				}
+			}
 			else {
 				add_token(scan, TOKEN_SLASH);
 			}
