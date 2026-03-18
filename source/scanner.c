@@ -16,6 +16,14 @@ static inline bool IS_DIGIT(char c) {
     return ('0' <= c) && (c <= '9');
 }
 
+static inline bool IS_IDENTIFIER_CHAR(char c) {
+	return (
+		('a' <= c && c <= 'z') ||
+		('A' <= c && c <= 'Z') ||
+		(c == '_')
+	);
+}
+
 typedef struct
 {
 	char* str;
@@ -34,11 +42,20 @@ typedef struct
 } token_scanner_t;
 
 static void scan_token(token_scanner_t* scan);
+
+// In the case of an identifier type token, 
+// add_token checks the lexeme first, if it matches a reserved keyword
+// the token will be added with said keyword's token type
+// if not, the type will be an identifier
 static void add_token(token_scanner_t* scan, token_type_t type);
+
 static void add_double_token(
 	token_scanner_t* scan, char expected_next,
 	token_type_t single_type, token_type_t double_type);
+
 static bool at_end(const token_scanner_t* scan);
+
+static token_type_t get_type_from_keyword(const char* lexeme);
 
 token_list_t token_scanner_scan(const char* input)
 {
@@ -193,6 +210,13 @@ static void scan_token(token_scanner_t* scan)
 
 				add_token(scan, TOKEN_NUMBER);
 			}
+			else if (IS_IDENTIFIER_CHAR(c)) {
+				while (IS_IDENTIFIER_CHAR(scan->str[scan->current])) {
+					scan->current++;
+				}
+
+				add_token(scan, TOKEN_IDENTIFIER);
+			}
 			else {
 				printf("ERROR | Line: %d | Unexpected Character '%c'\n", scan->line, c);
 				scan->has_error = true;
@@ -219,6 +243,13 @@ static void add_token(token_scanner_t* scan, token_type_t type)
 		scan->tokens = realloc(scan->tokens, sizeof(token_t) * scan->tokens_count);
 	}
 
+	if (token.type == TOKEN_IDENTIFIER) {
+		token_type_t keyword = get_type_from_keyword(token.lexeme);
+		if (keyword != TOKEN_NONE) {
+			token.type = keyword;
+		}
+	}
+
 	scan->tokens[scan->tokens_count-1] = token;
 }
 
@@ -238,4 +269,58 @@ static void add_double_token(
 static bool at_end(const token_scanner_t* scan)
 {
 	return !(scan->current < scan->str_len);
+}
+
+token_type_t get_type_from_keyword(const char* lexeme)
+{
+	if (strcmp(lexeme, "and") == 0) {
+		return TOKEN_AND;
+	}
+	if (strcmp(lexeme, "class") == 0) {
+		return TOKEN_CLASS;
+	}
+	if (strcmp(lexeme, "else") == 0) {
+		return TOKEN_ELSE;
+	}
+	if (strcmp(lexeme, "false") == 0) {
+		return TOKEN_FALSE;
+	}
+	if (strcmp(lexeme, "fun") == 0) {
+		return TOKEN_FUN;
+	}
+	if (strcmp(lexeme, "for") == 0) {
+		return TOKEN_FOR;
+	}
+	if (strcmp(lexeme, "if") == 0) {
+		return TOKEN_IF;
+	}
+	if (strcmp(lexeme, "nil") == 0) {
+		return TOKEN_NIL;
+	}
+	if (strcmp(lexeme, "or") == 0) {
+		return TOKEN_OR;
+	}
+	if (strcmp(lexeme, "print") == 0) {
+		return TOKEN_PRINT;
+	}
+	if (strcmp(lexeme, "return") == 0) {
+		return TOKEN_RETURN;
+	}
+	if (strcmp(lexeme, "super") == 0) {
+		return TOKEN_SUPER;
+	}
+	if (strcmp(lexeme, "this") == 0) {
+		return TOKEN_THIS;
+	}
+	if (strcmp(lexeme, "true") == 0) {
+		return TOKEN_TRUE;
+	}
+	if (strcmp(lexeme, "var") == 0) {
+		return TOKEN_VAR;
+	}
+	if (strcmp(lexeme, "while") == 0) {
+		return TOKEN_WHILE;
+	}
+
+	return TOKEN_NONE;
 }
