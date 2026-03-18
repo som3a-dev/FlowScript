@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -28,6 +29,17 @@ static bool running = true;
 static bool exec_command(const char* input);
 
 static void clear_stdout();
+
+/*
+* gets the Xth substr out of a string
+* caller must free
+*/
+static char* get_substr_delim(const char* str, char delim, int i);
+
+/*
+* returns the amount of delimiter split substrings in the string
+*/
+static int get_substr_delim_count(const char* str, char delim);
 
 static void init_crtdbg();
 static void dump_crtdbg();
@@ -71,6 +83,13 @@ int main(void)
 
 static bool exec_command(const char* input)
 {
+	char* cmd = get_substr_delim(input, ' ', 0);
+	int count = get_substr_delim_count(input, ' ');
+
+	if (!cmd) {
+		return false;
+	}
+
 	bool result = true;
 
 	if (strcmp(input, ".cls") == 0) {
@@ -83,6 +102,7 @@ static bool exec_command(const char* input)
 		result = false;
 	}
 
+	free(cmd);
 	return result;
 }
 
@@ -108,6 +128,70 @@ static void clear_stdout()
 	SetConsoleCursorPosition(console_handle, cursor);
 
 	#endif
+}
+
+static char* get_substr_delim(const char* str, char delim, int index)
+{
+	if (index < 0) {
+		return NULL;
+	}
+
+	char* result = NULL;
+
+	int current_index = -1;
+	int result_len = 0;
+	for (int i = 0; i < strlen(str); i++)
+	{
+		if (str[i] == delim) {
+			current_index++;
+
+			if (current_index != index) {
+				result_len = 0;
+			}
+			else if (result_len != 0) { // avoid returning a string consisting of the delimiter as the result
+				result = calloc(result_len + 1, sizeof(char));
+
+				memcpy(result, str + (i - result_len), result_len * sizeof(char));
+				result[result_len] = '\0';
+
+				break;
+			}
+		}
+
+		result_len++;
+	}
+
+	if ((current_index == -1) && index == 0) {
+		result = calloc(strlen(str) + 1, sizeof(char));
+		strcpy(result, str);
+	}
+
+	return result;
+}
+
+int get_substr_delim_count(const char* str, char delim)
+{
+	int count = 0;
+
+	int sub_len = 0;
+	for (int i = 0; i < strlen(str); i++) {
+		if (str[i] == delim) {
+			if (sub_len != 0) {
+				count++;
+			}
+
+			sub_len = 0;
+			continue;
+		}
+
+		sub_len++;
+	}
+
+	if (sub_len != 0) {
+		count++;
+	}
+
+	return count;
 }
 
 static void init_crtdbg()
