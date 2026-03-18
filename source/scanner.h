@@ -34,7 +34,7 @@ typedef enum
 typedef struct
 {
 	token_type_t type;
-	char* lexem;
+	char* lexeme;
 	int line;
 } token_t;
 

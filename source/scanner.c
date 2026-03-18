@@ -65,14 +65,14 @@ token_list_t token_scanner_scan(const char* input)
 
 void token_print(token_t token)
 {
-    printf("Type: %d Lexem: '%s' Line: %d\n", token.type, token.lexem, token.line);
+    printf("Type: %d lexeme: '%s' Line: %d\n", token.type, token.lexeme, token.line);
 }
 
 void token_list_delete(token_list_t* list)
 {
 	for (int i = 0; i < list->len; i++)
 	{
-		free(list->tokens[i].lexem);
+		free(list->tokens[i].lexeme);
 	}
 
 	free(list->tokens);
@@ -207,9 +207,9 @@ static void add_token(token_scanner_t* scan, token_type_t type)
 	token.type = type;
 	token.line = 1;
 
-	size_t lexem_len = scan->current - scan->start;
-	token.lexem = calloc(lexem_len + 1, sizeof(char));
-	memcpy(token.lexem, scan->str + scan->start, lexem_len);
+	size_t lexeme_len = scan->current - scan->start;
+	token.lexeme = calloc(lexeme_len + 1, sizeof(char));
+	memcpy(token.lexeme, scan->str + scan->start, lexeme_len);
 
 	scan->tokens_count++;
 	if (scan->tokens == NULL) {
