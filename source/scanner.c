@@ -169,7 +169,7 @@ static void scan_token(token_scanner_t* scan)
 			}
 
 			if (!at_end(scan)) {
-				add_token(scan, TOKEN_BANG);
+				add_token(scan, TOKEN_STRING);
 				scan->current++; // skip the last '"'
 			}
 			else {
