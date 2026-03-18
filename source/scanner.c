@@ -12,6 +12,10 @@
 
 #include "scanner.h"
 
+static inline int IS_DIGIT(char c) {
+    return ('0' <= c) && (c <= '9');
+}
+
 typedef struct
 {
 	char* str;
@@ -174,8 +178,25 @@ static void scan_token(token_scanner_t* scan)
 		} break;
 
 		default: {
-			printf("ERROR | Line: %d | Unexpected Character '%c'\n", scan->line, c);
-			scan->has_error = true;
+			if (IS_DIGIT(c)) {
+				while (IS_DIGIT(scan->str[scan->current]))
+				{
+					scan->current++;
+				}
+				if (scan->str[scan->current] == '.' && (IS_DIGIT(scan->str[scan->current + 1]))) {
+					scan->current++;
+					while (IS_DIGIT(scan->str[scan->current]))
+					{
+						scan->current++;
+					}				
+				}
+
+				add_token(scan, TOKEN_NUMBER);
+			}
+			else {
+				printf("ERROR | Line: %d | Unexpected Character '%c'\n", scan->line, c);
+				scan->has_error = true;
+			}
 		} break;
 	}
 }
