@@ -25,6 +25,8 @@
 
 static bool running = true;
 
+static bool exec_command(const char* input);
+
 static void clear_stdout();
 
 static void init_crtdbg();
@@ -44,12 +46,7 @@ int main(void)
 
 		buf[strlen(buf)-1] = '\0'; // strip the newline
 
-		if (strcmp(buf, "cls") == 0) {
-			clear_stdout();
-			continue;
-		}
-		if (strcmp(buf, "q") == 0) {
-			running = false;
+		if (exec_command(buf)) {
 			continue;
 		}
 
@@ -70,6 +67,23 @@ int main(void)
 	#endif
 
 	return 0;
+}
+
+static bool exec_command(const char* input)
+{
+	bool result = true;
+
+	if (strcmp(input, ".cls") == 0) {
+		clear_stdout();
+	}
+	else if (strcmp(input, ".q") == 0) {
+		running = false;
+	}
+	else {
+		result = false;
+	}
+
+	return result;
 }
 
 static void clear_stdout()
