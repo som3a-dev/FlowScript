@@ -12,7 +12,7 @@
 
 #include "scanner.h"
 
-static inline int IS_DIGIT(char c) {
+static inline bool IS_DIGIT(char c) {
     return ('0' <= c) && (c <= '9');
 }
 
