@@ -190,7 +190,8 @@ static void scan_token(token_scanner_t* scan)
 				scan->current++; // skip the last '"'
 			}
 			else {
-				printf("ERROR | Line: %d | String missing end quote\n", scan->line);
+				printf("ERROR | Line: %d | Unterminated string literal\n", scan->line);
+				scan->has_error = true;
 			}
 		} break;
 
