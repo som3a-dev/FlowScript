@@ -30,6 +30,14 @@ typedef struct
 {
     expr_t e;
 
+    token_t* operator;
+    expr_t* right;
+} expr_unary_t;
+
+typedef struct
+{
+    expr_t e;
+
     const char* val;
 } expr_literal_t;
 
@@ -37,37 +45,21 @@ static char* expr_to_str(const expr_t* expr);
 
 void parse(token_list_t* tokens)
 {
-    expr_literal_t n1;
-    n1.e.type = EXPR_LITERAL;
-    n1.val = "5";
+    expr_literal_t l;
+    l.e.type = EXPR_LITERAL;
+    l.val = "12";
 
-    expr_literal_t n2;
-    n2.e.type = EXPR_LITERAL;
-    n2.val = "3";
+    token_t op;
+    op.type = TOKEN_MINUS;
+    op.lexeme = "-";
+    op.line = 1;
 
-    expr_binary_t op;
-    op.e.type = EXPR_BINARY;
-    op.left = (expr_t*)&n1;
-    op.right = (expr_t*)&n2;
+    expr_unary_t u;
+    u.e.type = EXPR_UNARY;
+    u.operator = &op;
+    u.right = (expr_t*)&l;
 
-    token_t token;
-    token.type = TOKEN_PLUS;
-    token.line = 1;
-    token.lexeme = "+";
-    op.operator = &token;
-
-    expr_binary_t op2;
-    op2.e.type = EXPR_BINARY;
-    op2.left = (expr_t*)&n1;
-    op2.right = (expr_t*)&op;
-
-    token_t token2;
-    token2.type = TOKEN_MINUS;
-    token2.line = 1;
-    token2.lexeme = "-";
-    op2.operator = &token2;
-
-    char* str = expr_to_str((const expr_t*)&op2);
+    char* str = expr_to_str((const expr_t*)&u);
     printf("Expr: %s\n", str);
 
     free(str);
@@ -92,6 +84,20 @@ static char* expr_to_str(const expr_t* expr)
             free(left);
             free(right);
 
+            return str;
+        } break;
+
+        case EXPR_UNARY:
+        {
+            const expr_unary_t* e = (expr_unary_t*)expr;
+            char* right = expr_to_str(e->right);
+
+            size_t str_size = sizeof(char) + (strlen(right) + strlen(e->operator->lexeme) + 1);
+            char* str = malloc(str_size);
+            snprintf(str, str_size, "%s%s", e->operator->lexeme, right);
+
+            free(right);
+            
             return str;
         } break;
 
