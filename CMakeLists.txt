@@ -18,6 +18,7 @@ project ("FlowScript")
 set(SOURCES
   source/main.c
   source/scanner.c
+  source/parser.c
 )
 
 add_compile_definitions(USE_NEW_CACHE _CRT_SECURE_NO_WARNINGS)
