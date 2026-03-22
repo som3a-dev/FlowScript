@@ -19,6 +19,7 @@
 #endif
 #include <crtdbg.h>
 
+#include "parser.h"
 #include "scanner.h"
 
 // Maximum size of user's input string
@@ -69,6 +70,8 @@ int main(void)
 			token_print(tokens.tokens[i]);
 		}
 
+		parse(&tokens);
+
 		token_list_delete(&tokens);
 
 		buf[0] = '\0'; // clear the buffer
@@ -92,10 +95,10 @@ static bool exec_command(const char* input)
 
 	bool result = true;
 
-	if (strcmp(input, ".cls") == 0) {
+	if ((strcmp(input, ".cls") == 0) && count == 1) {
 		clear_stdout();
 	}
-	else if (strcmp(input, ".q") == 0) {
+	else if ((strcmp(input, ".q") == 0) && count == 1) {
 		running = false;
 	}
 	else {
