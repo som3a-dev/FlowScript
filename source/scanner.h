@@ -7,6 +7,11 @@
  * Copyright (c) 2026 Omar Eltayeb
  */
 
+#ifndef _SCANNER_H
+#define _SCANNER_H
+
+#include <stdbool.h>
+
 typedef enum
 {
 	TOKEN_NONE,
@@ -54,3 +59,5 @@ token_list_t token_scanner_scan(const char* input);
 
 void token_print(token_t token);
 void token_list_delete(token_list_t* list);
+
+#endif
