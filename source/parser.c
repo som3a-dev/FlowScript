@@ -171,6 +171,8 @@ static expr_t* parse_equality()
     token_t tok = get_token();
     while (str_equal(tok.lexeme, 2, "==", "!="))
     {
+        curr++;
+
         expr_t* right = parse_comparison();
         
         expr_binary_t* new_expr = new_binary_expr();
@@ -180,7 +182,6 @@ static expr_t* parse_equality()
 
         expr = (expr_t*)new_expr;
 
-        curr++;
         tok = get_token();
     }
 
@@ -194,6 +195,8 @@ static expr_t* parse_comparison()
     token_t tok = get_token();
     while (str_equal(tok.lexeme, 4, ">", ">=", "<=", "<"))
     {
+        curr++;
+
         expr_t* right = parse_term();
         
         expr_binary_t* new_expr = new_binary_expr();
@@ -202,8 +205,7 @@ static expr_t* parse_comparison()
         new_expr->operator = tok;
 
         expr = (expr_t*)new_expr;
-
-        curr++;
+        
         tok = get_token();
     }
 
@@ -217,6 +219,8 @@ static expr_t* parse_term()
     token_t tok = get_token();
     while (str_equal(tok.lexeme, 2, "-", "+"))
     {
+        curr++;
+
         expr_t* right = parse_factor();
         
         expr_binary_t* new_expr = new_binary_expr();
@@ -226,7 +230,6 @@ static expr_t* parse_term()
 
         expr = (expr_t*)new_expr;
 
-        curr++;
         tok = get_token();
     }
 
@@ -240,6 +243,8 @@ static expr_t* parse_factor()
     token_t tok = get_token();
     while (str_equal(tok.lexeme, 2, "/", "*"))
     {
+        curr++;
+
         expr_t* right = parse_unary();
         
         expr_binary_t* new_expr = new_binary_expr();
@@ -248,8 +253,7 @@ static expr_t* parse_factor()
         new_expr->operator = tok;
 
         expr = (expr_t*)new_expr;
-
-        curr++;
+        
         tok = get_token();
     }
 
@@ -261,6 +265,7 @@ static expr_t* parse_unary()
     token_t tok = get_token();
     if (str_equal(tok.lexeme, 2, "!", "-")) 
     {
+        curr++;
         expr_unary_t* expr = new_unary_expr();
         expr->operator = tok;
         expr->right = parse_unary();
@@ -279,57 +284,65 @@ static expr_t* parse_primary()
     {
         case TOKEN_FALSE:
         {
+            curr++;
+
             expr_literal_t* expr = new_literal_expr();
             expr->type = LITERAL_BOOL;
             expr->val.boolean = false;
-            curr++;
 
             return (expr_t*)expr;
         } break;
 
         case TOKEN_TRUE:
         {
+            curr++;
+
             expr_literal_t* expr = new_literal_expr();
             expr->type = LITERAL_BOOL;
             expr->val.boolean = true;
-            curr++;
 
             return (expr_t*)expr;
         } break;
 
         case TOKEN_NIL:
         {
+            curr++;
+
             expr_literal_t* expr = new_literal_expr();
             expr->type = LITERAL_NULL;
-            curr++;
 
             return (expr_t*)expr;
         } break;
 
         case TOKEN_STRING:
         {
+            curr++;
+
             expr_literal_t* expr = new_literal_expr();
             expr->type = LITERAL_STRING;
             expr->val.str = tok.lexeme;
-            curr++;
-
+           
             return (expr_t*)expr;
         } break;
 
         case TOKEN_NUMBER:
         {
+            curr++;
+
             expr_literal_t* expr = new_literal_expr();
             expr->type = LITERAL_NUMBER;
             expr->val.num = (float)(atof(tok.lexeme));
-            curr++;
 
             return (expr_t*)expr;
         } break;
 
         case TOKEN_LEFT_PAREN:
         {
+            curr++;
+
             expr_t* inner = parse_expr();
             token_t* current = tokens->tokens + curr;
+
             if (!str_equal(current->lexeme, 1, ")"))
             {
                 printf("PARSER ERROR: Expected ')' after expression");
