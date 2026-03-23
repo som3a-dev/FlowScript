@@ -1,5 +1,8 @@
 #include "parser.h"
 
+#include <assert.h>
+
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +25,7 @@ typedef struct
     expr_t e;
 
     expr_t* left;
-    token_t* operator;
+    token_t operator;
     expr_t* right;
 } expr_binary_t;
 
@@ -30,41 +33,318 @@ typedef struct
 {
     expr_t e;
 
-    token_t* operator;
+    token_t operator;
     expr_t* right;
 } expr_unary_t;
+
+typedef enum
+{
+    LITERAL_BOOL,
+    LITERAL_STRING,
+    LITERAL_NUMBER,
+    LITERAL_NULL
+} expr_literal_type_t;
 
 typedef struct
 {
     expr_t e;
 
-    const char* val;
+    expr_literal_type_t type;
+    union {
+        float num;
+        const char* str;
+        bool boolean;
+    } val;
 } expr_literal_t;
+
+typedef struct
+{
+    expr_t e;
+
+    expr_t* inner;
+} expr_grouping_t;
+
+static expr_t* parse_expr();
+static expr_t* parse_equality();
+static expr_t* parse_comparison();
+static expr_t* parse_term();
+static expr_t* parse_factor();
+static expr_t* parse_unary();
+static expr_t* parse_primary();
 
 static char* expr_to_str(const expr_t* expr);
 
-void parse(token_list_t* tokens)
+static bool str_equal(const char* str, int n, ...)
 {
-    expr_literal_t l;
-    l.e.type = EXPR_LITERAL;
-    l.val = "12";
+    if (!str) {
+        return false;
+    }
 
-    token_t op;
-    op.type = TOKEN_MINUS;
-    op.lexeme = "-";
-    op.line = 1;
+    va_list args;
+    va_start(args, n);
 
-    expr_unary_t u;
-    u.e.type = EXPR_UNARY;
-    u.operator = &op;
-    u.right = (expr_t*)&l;
+    bool equal = false;
 
-    char* str = expr_to_str((const expr_t*)&u);
-    printf("Expr: %s\n", str);
+    for (int i = 0; i < n; i++)
+    {
+        const char* str2 = va_arg(args, const char*);
+        assert(str2);
+
+        if (strcmp(str, str2) == 0) {
+            equal = true;
+            break;
+        }
+    }
+
+    va_end(args);
+    return equal;
+}
+
+static int curr = 0;
+static token_list_t* tokens = NULL;
+
+static inline token_t get_token()
+{
+    token_t tok = {0};
+    tok.type = TOKEN_NONE;
+
+    if (curr < tokens->len) {
+        tok = tokens->tokens[curr];
+    }
+
+    return tok;
+}
+
+void parse(token_list_t* _tokens)
+{
+    tokens = _tokens;
+
+    expr_t* expr = parse_expr();
+    char* str = expr_to_str(expr);
+
+    printf("Expr Str: %s\n", str);
 
     free(str);
+}
 
-    (tokens);
+static expr_t* parse_expr()
+{
+    return parse_equality();
+}
+
+static inline expr_binary_t* new_binary_expr()
+{
+    expr_binary_t* expr = calloc(1, sizeof(expr_binary_t));
+    expr->e.type = EXPR_BINARY;
+
+    return expr;
+}
+
+static inline expr_unary_t* new_unary_expr()
+{
+    expr_unary_t* expr = calloc(1, sizeof(expr_unary_t));
+    expr->e.type = EXPR_UNARY;
+
+    return expr;
+}
+
+static inline expr_literal_t* new_literal_expr()
+{
+    expr_literal_t* expr = calloc(1, sizeof(expr_literal_t));
+    expr->e.type = EXPR_LITERAL;
+
+    return expr;
+}
+
+static inline expr_grouping_t* new_grouping_expr()
+{
+    expr_grouping_t* expr = calloc(1, sizeof(expr_grouping_t));
+    expr->e.type = EXPR_GROUPING;
+
+    return expr;
+}
+
+static expr_t* parse_equality()
+{
+    expr_t* expr = parse_comparison();
+
+    token_t tok = get_token();
+    while (str_equal(tok.lexeme, 2, "==", "!="))
+    {
+        expr_t* right = parse_comparison();
+        
+        expr_binary_t* new_expr = new_binary_expr();
+        new_expr->left = expr;
+        new_expr->right = right;
+        new_expr->operator = tok;
+
+        expr = (expr_t*)new_expr;
+
+        curr++;
+        tok = get_token();
+    }
+
+    return (expr_t*)expr;
+}
+
+static expr_t* parse_comparison()
+{
+    expr_t* expr = parse_term();
+
+    token_t tok = get_token();
+    while (str_equal(tok.lexeme, 4, ">", ">=", "<=", "<"))
+    {
+        expr_t* right = parse_term();
+        
+        expr_binary_t* new_expr = new_binary_expr();
+        new_expr->left = expr;
+        new_expr->right = right;
+        new_expr->operator = tok;
+
+        expr = (expr_t*)new_expr;
+
+        curr++;
+        tok = get_token();
+    }
+
+    return (expr_t*)expr;
+}
+
+static expr_t* parse_term()
+{
+    expr_t* expr = parse_factor();
+
+    token_t tok = get_token();
+    while (str_equal(tok.lexeme, 2, "-", "+"))
+    {
+        expr_t* right = parse_factor();
+        
+        expr_binary_t* new_expr = new_binary_expr();
+        new_expr->left = expr;
+        new_expr->right = right;
+        new_expr->operator = tok;
+
+        expr = (expr_t*)new_expr;
+
+        curr++;
+        tok = get_token();
+    }
+
+    return (expr_t*)expr;
+}
+
+static expr_t* parse_factor()
+{
+    expr_t* expr = parse_unary();
+
+    token_t tok = get_token();
+    while (str_equal(tok.lexeme, 2, "/", "*"))
+    {
+        expr_t* right = parse_unary();
+        
+        expr_binary_t* new_expr = new_binary_expr();
+        new_expr->left = expr;
+        new_expr->right = right;
+        new_expr->operator = tok;
+
+        expr = (expr_t*)new_expr;
+
+        curr++;
+        tok = get_token();
+    }
+
+    return (expr_t*)expr;
+}
+
+static expr_t* parse_unary()
+{
+    token_t tok = get_token();
+    if (str_equal(tok.lexeme, 2, "!", "-")) 
+    {
+        expr_unary_t* expr = new_unary_expr();
+        expr->operator = tok;
+        expr->right = parse_unary();
+
+        return (expr_t*)expr;
+    }
+
+    return parse_primary();
+}
+
+static expr_t* parse_primary()
+{
+    token_t tok = get_token();
+    
+    switch (tok.type)
+    {
+        case TOKEN_FALSE:
+        {
+            expr_literal_t* expr = new_literal_expr();
+            expr->type = LITERAL_BOOL;
+            expr->val.boolean = false;
+            curr++;
+
+            return (expr_t*)expr;
+        } break;
+
+        case TOKEN_TRUE:
+        {
+            expr_literal_t* expr = new_literal_expr();
+            expr->type = LITERAL_BOOL;
+            expr->val.boolean = true;
+            curr++;
+
+            return (expr_t*)expr;
+        } break;
+
+        case TOKEN_NIL:
+        {
+            expr_literal_t* expr = new_literal_expr();
+            expr->type = LITERAL_NULL;
+            curr++;
+
+            return (expr_t*)expr;
+        } break;
+
+        case TOKEN_STRING:
+        {
+            expr_literal_t* expr = new_literal_expr();
+            expr->type = LITERAL_STRING;
+            expr->val.str = tok.lexeme;
+            curr++;
+
+            return (expr_t*)expr;
+        } break;
+
+        case TOKEN_NUMBER:
+        {
+            expr_literal_t* expr = new_literal_expr();
+            expr->type = LITERAL_NUMBER;
+            expr->val.num = (float)(atof(tok.lexeme));
+            curr++;
+
+            return (expr_t*)expr;
+        } break;
+
+        case TOKEN_LEFT_PAREN:
+        {
+            expr_t* inner = parse_expr();
+            token_t* current = tokens->tokens + curr;
+            if (!str_equal(current->lexeme, 1, ")"))
+            {
+                printf("PARSER ERROR: Expected ')' after expression");
+                assert(false);
+                return inner;
+            }
+
+            expr_grouping_t* expr = new_grouping_expr();
+            expr->inner = inner;
+            return (expr_t*)expr;
+        } break;
+    }
+
+    assert(false);
+    return NULL;
 }
 
 static char* expr_to_str(const expr_t* expr)
@@ -77,9 +357,9 @@ static char* expr_to_str(const expr_t* expr)
             char* left = expr_to_str(e->left);
             char* right = expr_to_str(e->right);
 
-            size_t str_size = sizeof(char) * (strlen(left) + strlen(right) + strlen(e->operator->lexeme) + 1 + 2); // accounting for null terminator and spaces
+            size_t str_size = sizeof(char) * (strlen(left) + strlen(right) + strlen(e->operator.lexeme) + 1 + 2); // accounting for null terminator and spaces
             char* str = malloc(str_size);
-            snprintf(str, str_size, "%s %s %s", e->operator->lexeme, left, right);
+            snprintf(str, str_size, "%s %s %s", e->operator.lexeme, left, right);
 
             free(left);
             free(right);
@@ -92,9 +372,9 @@ static char* expr_to_str(const expr_t* expr)
             const expr_unary_t* e = (expr_unary_t*)expr;
             char* right = expr_to_str(e->right);
 
-            size_t str_size = sizeof(char) + (strlen(right) + strlen(e->operator->lexeme) + 1);
+            size_t str_size = sizeof(char) + (strlen(right) + strlen(e->operator.lexeme) + 1);
             char* str = malloc(str_size);
-            snprintf(str, str_size, "%s%s", e->operator->lexeme, right);
+            snprintf(str, str_size, "%s%s", e->operator.lexeme, right);
 
             free(right);
             
@@ -104,9 +384,38 @@ static char* expr_to_str(const expr_t* expr)
         case EXPR_LITERAL:
         {
             const expr_literal_t* e = (expr_literal_t*)expr;
-            char* str = malloc(sizeof(char) * (strlen(e->val) + 1));
-            strcpy(str, e->val);
 
+            char* str = NULL;
+            switch (e->type)
+            {
+                case LITERAL_BOOL:
+                {
+                    const char* bool_str = "false";
+                    if (e->val.boolean) {
+                        bool_str = "true" ;
+                    }
+
+                    str = malloc(sizeof(char) * (strlen(bool_str) + 1));
+                    strcpy(str, bool_str);
+                } break;
+
+                case LITERAL_NUMBER:
+                {
+                    int str_size = snprintf(NULL, 0, "%f", e->val.num) + 1;
+
+                    str = malloc(str_size);
+
+                    snprintf(str, str_size, "%f", e->val.num);
+                } break;
+
+                case LITERAL_STRING:
+                {
+                    str = malloc(strlen(e->val.str) + 1);
+                    strcpy(str, e->val.str);
+                } break;
+            }
+
+            assert(str);
             return str;
         } break;
     }

@@ -10,6 +10,6 @@
 
 #include "scanner.h"
 
-void parse(token_list_t* tokens);
+void parse(token_list_t* _tokens);
 
 #endif
