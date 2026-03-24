@@ -65,6 +65,8 @@ typedef struct
 } expr_grouping_t;
 
 static expr_t* parse_expr();
+static void free_expr(expr_t* expr);
+
 static expr_t* parse_equality();
 static expr_t* parse_comparison();
 static expr_t* parse_term();
@@ -115,6 +117,29 @@ static inline token_t get_token()
     return tok;
 }
 
+void parse(token_list_t* _tokens)
+{
+    curr = 0;
+    tokens = _tokens;
+
+    expr_t* expr = parse_expr();
+    if (expr == NULL)
+    {
+        return;
+    }
+
+    char* str = expr_to_str(expr);
+    printf("Expr Str: %s\n", str);
+    free(str);
+
+    free_expr(expr);
+}
+
+static expr_t* parse_expr()
+{
+    return parse_equality();
+}
+
 static void free_expr(expr_t* expr)
 {
     switch (expr->type)
@@ -149,26 +174,6 @@ static void free_expr(expr_t* expr)
     }
 
     free(expr);
-}
-
-void parse(token_list_t* _tokens)
-{
-    curr = 0;
-    tokens = _tokens;
-
-    expr_t* expr = parse_expr();
-    char* str = expr_to_str(expr);
-
-    printf("Expr Str: %s\n", str);
-
-    free(str);
-
-    free_expr(expr);
-}
-
-static expr_t* parse_expr()
-{
-    return parse_equality();
 }
 
 static inline expr_binary_t* new_binary_expr()
@@ -206,6 +211,10 @@ static inline expr_grouping_t* new_grouping_expr()
 static expr_t* parse_equality()
 {
     expr_t* expr = parse_comparison();
+    if (expr == NULL)
+    {
+        return NULL;
+    }
 
     token_t tok = get_token();
     while (str_equal(tok.lexeme, 2, "==", "!="))
@@ -230,6 +239,10 @@ static expr_t* parse_equality()
 static expr_t* parse_comparison()
 {
     expr_t* expr = parse_term();
+    if (expr == NULL)
+    {
+        return NULL;
+    }
 
     token_t tok = get_token();
     while (str_equal(tok.lexeme, 4, ">", ">=", "<=", "<"))
@@ -254,6 +267,10 @@ static expr_t* parse_comparison()
 static expr_t* parse_term()
 {
     expr_t* expr = parse_factor();
+    if (expr == NULL)
+    {
+        return NULL;
+    }
 
     token_t tok = get_token();
     while (str_equal(tok.lexeme, 2, "-", "+"))
@@ -278,6 +295,10 @@ static expr_t* parse_term()
 static expr_t* parse_factor()
 {
     expr_t* expr = parse_unary();
+    if (expr == NULL)
+    {
+        return NULL;
+    }
 
     token_t tok = get_token();
     while (str_equal(tok.lexeme, 2, "/", "*"))
@@ -384,9 +405,9 @@ static expr_t* parse_primary()
 
             if (!str_equal(current.lexeme, 1, ")"))
             {
-                printf("PARSER ERROR: Expected ')' after expression");
-                assert(false);
-                return inner;
+                printf("PARSER ERROR: Expected ')' after expression\n");
+                free_expr(inner);
+                return NULL;
             }
 
             expr_grouping_t* expr = new_grouping_expr();
@@ -395,7 +416,7 @@ static expr_t* parse_primary()
         } break;
     }
 
-    assert(false);
+    printf("PARSER ERROR: Expected an expression\n");
     return NULL;
 }
 
