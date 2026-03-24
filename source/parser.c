@@ -371,9 +371,9 @@ static char* expr_to_str(const expr_t* expr)
             char* left = expr_to_str(e->left);
             char* right = expr_to_str(e->right);
 
-            size_t str_size = sizeof(char) * (strlen(left) + strlen(right) + strlen(e->operator.lexeme) + 1 + 2); // accounting for null terminator and spaces
+            size_t str_size = sizeof(char) * (strlen(left) + strlen(right) + strlen(e->operator.lexeme) + 1 + 4); // accounting for null terminator and spaces
             char* str = malloc(str_size);
-            snprintf(str, str_size, "%s %s %s", e->operator.lexeme, left, right);
+            snprintf(str, str_size, "(%s %s %s)", e->operator.lexeme, left, right);
 
             free(left);
             free(right);
@@ -392,6 +392,20 @@ static char* expr_to_str(const expr_t* expr)
 
             free(right);
             
+            return str;
+        } break;
+
+        case EXPR_GROUPING:
+        {
+            const expr_grouping_t* e = (expr_grouping_t*)expr;
+            char* inner = expr_to_str(e->inner);
+
+            size_t str_size = sizeof(char) * (strlen(inner) + strlen("()") + 1);
+            char* str = malloc(str_size);
+            snprintf(str, str_size, "(%s)", inner);
+
+            free(inner);
+
             return str;
         } break;
 
