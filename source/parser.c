@@ -117,6 +117,7 @@ static inline token_t get_token()
 
 void parse(token_list_t* _tokens)
 {
+    curr = 0;
     tokens = _tokens;
 
     expr_t* expr = parse_expr();
