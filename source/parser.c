@@ -67,8 +67,6 @@ typedef struct
     expr_t* inner;
 } expr_grouping_t;
 
-
-
 typedef struct
 {
     object_type_t type;
@@ -90,6 +88,11 @@ static expr_t* parse_term();
 static expr_t* parse_factor();
 static expr_t* parse_unary();
 static expr_t* parse_primary();
+
+static object_t interpret_expr(expr_t* expr);
+
+static void free_object(object_t* obj);
+static void print_object(const object_t* obj);
 
 static char* expr_to_str(const expr_t* expr);
 
@@ -148,6 +151,11 @@ void parse(token_list_t* _tokens)
     char* str = expr_to_str(expr);
     printf("Expr Str: %s\n", str);
     free(str);
+
+    object_t obj = interpret_expr(expr);
+    print_object(&obj);
+
+    free_object(&obj);
 
     free_expr(expr);
 }
@@ -464,6 +472,274 @@ static expr_t* parse_primary()
 
     printf("PARSER ERROR: Expected an expression\n");
     return NULL;
+}
+
+static bool object_is_truthy(const object_t* obj)
+{
+    switch (obj->type)
+    {
+        case OBJECT_BOOL:
+        {
+            return (obj->val.boolean);
+        } break;
+
+        case OBJECT_NIL:
+        {
+            return false;
+        } break;
+
+        default:
+        {
+            return true;
+        } break;
+    }
+}
+
+static bool object_is_equal(const object_t* left, const object_t* right)
+{
+    if (left->type != right->type)
+    {
+        return false;
+    }
+
+    switch (left->type)
+    {
+        case OBJECT_STRING:
+        {
+            return (strcmp(left->val.str, right->val.str) == 0);
+        } break;
+
+        case OBJECT_NIL:
+        {
+            return true;
+        } break;
+
+        // this will work for any object type where the value is encoded in val
+        default:
+        {
+            return left->val.num == right->val.num;
+        } break;
+    }
+}
+
+object_t interpret_expr(expr_t* expr)
+{
+    object_t obj = {0};
+    switch (expr->type)
+    {
+        case EXPR_LITERAL:
+        {
+            expr_literal_t* e = (expr_literal_t*)expr;
+            obj.type = e->type; 
+            
+            switch (obj.type)
+            {
+                case OBJECT_STRING:
+                {
+                    obj.val.str = malloc(sizeof(char) * (strlen(e->val.str) + 1));
+                    strcpy(obj.val.str, e->val.str);
+                } break;
+
+                case OBJECT_BOOL:
+                {
+                    obj.val.boolean = e->val.boolean;
+                } break;
+
+                case OBJECT_NUMBER:
+                {
+                    obj.val.num = e->val.num;
+                } break;
+
+                case OBJECT_NIL:
+                {
+                    // TODO(omar): implement nil (everywhere)
+                } break;
+
+                default: assert(false);
+            }
+
+        } break;
+
+        case EXPR_UNARY:
+        {
+            expr_unary_t* e = (expr_unary_t*)expr;
+            object_t right = interpret_expr(e->right);
+
+            switch (e->operator.type)
+            {
+                case TOKEN_MINUS:
+                {
+                    if (right.type == OBJECT_NUMBER) {
+                        obj.type = OBJECT_NUMBER;
+                        obj.val.num = -(right.val.num);
+                    }
+                    else {
+                        assert(false);
+                    }
+                } break;
+
+                case TOKEN_BANG:
+                {
+                    obj.type = OBJECT_BOOL;
+                    obj.val.boolean = !(object_is_truthy(&right));
+                } break;
+
+                default: assert(false);
+            }
+        } break;
+
+        case EXPR_BINARY:
+        {
+            expr_binary_t* e = (expr_binary_t*)expr;
+            object_t left = interpret_expr(e->left);
+            object_t right = interpret_expr(e->right);
+
+            switch (e->operator.type)
+            {
+                case TOKEN_STAR:
+                {
+                    assert(left.type == OBJECT_NUMBER);
+                    assert(right.type == OBJECT_NUMBER);
+
+                    obj.type = OBJECT_NUMBER;
+                    obj.val.num = left.val.num * right.val.num;
+                }  break;
+
+                case TOKEN_MINUS:
+                {
+                    assert(left.type == OBJECT_NUMBER);
+                    assert(right.type == OBJECT_NUMBER);
+
+                    obj.type = OBJECT_NUMBER;
+                    obj.val.num = left.val.num - right.val.num;
+                } break;
+
+                case TOKEN_SLASH:
+                {
+                    assert(left.type == OBJECT_NUMBER);
+                    assert(right.type == OBJECT_NUMBER);
+
+                    obj.type = OBJECT_NUMBER;
+                    obj.val.num = left.val.num / right.val.num;
+                } break;
+
+                case TOKEN_PLUS:
+                {
+                    if ((left.type == OBJECT_NUMBER) && (right.type == OBJECT_NUMBER)) {
+                        obj.type = OBJECT_NUMBER;
+                        obj.val.num = left.val.num + right.val.num;
+                    }
+                    else if ((left.type == OBJECT_STRING) && (right.type == OBJECT_STRING)) {
+                        size_t str_len = strlen(left.val.str) + strlen(left.val.str);
+                        char* str = malloc(sizeof(char) * (str_len + 1));
+
+                        snprintf(str, str_len + 1, "%s%s", left.val.str, right.val.str);
+
+                        obj.type = OBJECT_STRING;
+                        obj.val.str = str;
+                    }
+                    else {
+                        assert(false);
+                    }
+                } break;
+
+                case TOKEN_GREATER:
+                {
+                    assert(left.type == OBJECT_NUMBER);
+                    assert(right.type == OBJECT_NUMBER);
+
+                    obj.type = OBJECT_BOOL;
+                    obj.val.boolean = left.val.num > right.val.num;
+                } break;
+
+                case TOKEN_LESS:
+                {
+                    assert(left.type == OBJECT_NUMBER);
+                    assert(right.type == OBJECT_NUMBER);
+
+                    obj.type = OBJECT_BOOL;
+                    obj.val.boolean = left.val.num < right.val.num;
+                } break;
+
+                case TOKEN_GREATER_EQUAL:
+                {
+                    assert(left.type == OBJECT_NUMBER);
+                    assert(right.type == OBJECT_NUMBER);
+
+                    obj.type = OBJECT_BOOL;
+                    obj.val.boolean = left.val.num >= right.val.num;
+                } break;
+
+                case TOKEN_LESS_EQUAL:
+                {
+                    assert(left.type == OBJECT_NUMBER);
+                    assert(right.type == OBJECT_NUMBER);
+
+                    obj.type = OBJECT_BOOL;
+                    obj.val.boolean = left.val.num <= right.val.num;
+                } break;
+
+                case TOKEN_BANG_EQUAL:
+                {
+                    obj.type = OBJECT_BOOL;
+                    obj.val.boolean = !object_is_equal(&left, &right) ;
+                } break;
+
+                case TOKEN_EQUAL_EQUAL:
+                {
+                    obj.type = OBJECT_BOOL;
+                    obj.val.boolean = object_is_equal(&left, &right) ;
+                } break;
+            }
+
+            free_object(&left);
+            free_object(&right);
+        } break;
+
+        default: assert(false);
+    }
+
+    return obj;
+}
+
+void free_object(object_t* obj)
+{
+    if (obj->type == OBJECT_STRING) {
+        free(obj->val.str);
+    }
+}
+
+void print_object(const object_t *obj)
+{
+    switch (obj->type)
+    {
+        case OBJECT_BOOL:
+        {
+            if (obj->val.boolean) {
+                printf("true\n");
+            }
+            else {
+                printf("false\n");
+            }
+        } break;
+
+        case OBJECT_NUMBER:
+        {
+            printf("%f\n", obj->val.num);
+        } break;
+
+        case OBJECT_STRING:
+        {
+            printf("%s\n", obj->val.str);
+        } break;
+
+        case OBJECT_NIL:
+        {
+            printf("nil\n");
+        } break;
+
+        default: assert(false);
+    }
 }
 
 static char* expr_to_str(const expr_t* expr)
