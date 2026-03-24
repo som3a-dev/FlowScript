@@ -39,17 +39,20 @@ typedef struct
 
 typedef enum
 {
-    LITERAL_BOOL,
-    LITERAL_STRING,
-    LITERAL_NUMBER,
-    LITERAL_NULL
-} expr_literal_type_t;
+    OBJECT_BOOL,
+    OBJECT_STRING,
+    OBJECT_NUMBER,
+    OBJECT_NIL
+} object_type_t;
 
 typedef struct
 {
     expr_t e;
 
-    expr_literal_type_t type;
+    // technically an object and a literal are not the same thing
+    // and probably shouldn't share a type enum
+    // but we don't care for now
+    object_type_t type;
     union {
         float num;
         const char* str;
@@ -63,6 +66,19 @@ typedef struct
 
     expr_t* inner;
 } expr_grouping_t;
+
+
+
+typedef struct
+{
+    object_type_t type;
+    union {
+        float num;
+        char* str;
+        bool boolean;
+    } val;
+} object_t;
+
 
 static expr_t* parse_expr();
 static void free_expr(expr_t* expr);
@@ -377,7 +393,7 @@ static expr_t* parse_primary()
             curr++;
 
             expr_literal_t* expr = new_literal_expr();
-            expr->type = LITERAL_BOOL;
+            expr->type = OBJECT_BOOL;
             expr->val.boolean = false;
 
             return (expr_t*)expr;
@@ -388,7 +404,7 @@ static expr_t* parse_primary()
             curr++;
 
             expr_literal_t* expr = new_literal_expr();
-            expr->type = LITERAL_BOOL;
+            expr->type = OBJECT_BOOL;
             expr->val.boolean = true;
 
             return (expr_t*)expr;
@@ -399,7 +415,7 @@ static expr_t* parse_primary()
             curr++;
 
             expr_literal_t* expr = new_literal_expr();
-            expr->type = LITERAL_NULL;
+            expr->type = OBJECT_NIL;
 
             return (expr_t*)expr;
         } break;
@@ -409,7 +425,7 @@ static expr_t* parse_primary()
             curr++;
 
             expr_literal_t* expr = new_literal_expr();
-            expr->type = LITERAL_STRING;
+            expr->type = OBJECT_STRING;
             expr->val.str = tok.lexeme;
            
             return (expr_t*)expr;
@@ -420,7 +436,7 @@ static expr_t* parse_primary()
             curr++;
 
             expr_literal_t* expr = new_literal_expr();
-            expr->type = LITERAL_NUMBER;
+            expr->type = OBJECT_NUMBER;
             expr->val.num = (float)(atof(tok.lexeme));
 
             return (expr_t*)expr;
@@ -505,7 +521,7 @@ static char* expr_to_str(const expr_t* expr)
             char* str = NULL;
             switch (e->type)
             {
-                case LITERAL_BOOL:
+                case OBJECT_BOOL:
                 {
                     const char* bool_str = "false";
                     if (e->val.boolean) {
@@ -516,7 +532,7 @@ static char* expr_to_str(const expr_t* expr)
                     strcpy(str, bool_str);
                 } break;
 
-                case LITERAL_NUMBER:
+                case OBJECT_NUMBER:
                 {
                     int str_size = snprintf(NULL, 0, "%f", e->val.num) + 1;
 
@@ -525,7 +541,7 @@ static char* expr_to_str(const expr_t* expr)
                     snprintf(str, str_size, "%f", e->val.num);
                 } break;
 
-                case LITERAL_STRING:
+                case OBJECT_STRING:
                 {
                     str = malloc(strlen(e->val.str) + 1);
                     strcpy(str, e->val.str);
