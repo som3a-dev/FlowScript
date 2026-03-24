@@ -1,6 +1,8 @@
 //TODOS():
 
 //TODO(omar): add token info to errors
+//TODO(omar): handle division by zero ourselves
+//TODO(omar): move interpreter code away from here
 
 #include "parser.h"
 
