@@ -380,9 +380,9 @@ static expr_t* parse_primary()
             curr++;
 
             expr_t* inner = parse_expr();
-            token_t* current = tokens->tokens + curr;
+            token_t current = get_token();
 
-            if (!str_equal(current->lexeme, 1, ")"))
+            if (!str_equal(current.lexeme, 1, ")"))
             {
                 printf("PARSER ERROR: Expected ')' after expression");
                 assert(false);
