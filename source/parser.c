@@ -1,3 +1,7 @@
+//TODOS():
+
+//TODO(omar): add token info to errors
+
 #include "parser.h"
 
 #include <assert.h>
@@ -89,7 +93,7 @@ static expr_t* parse_factor();
 static expr_t* parse_unary();
 static expr_t* parse_primary();
 
-static object_t interpret_expr(expr_t* expr);
+object_t interpret_expr(expr_t* expr, const char** out_err);
 
 static void free_object(object_t* obj);
 static void print_object(const object_t* obj);
@@ -152,11 +156,16 @@ void parse(token_list_t* _tokens)
     printf("Expr Str: %s\n", str);
     free(str);
 
-    object_t obj = interpret_expr(expr);
-    print_object(&obj);
+    const char* err = NULL;
+    object_t obj = interpret_expr(expr, &err);
+    if (err) {
+        printf("RUNTIME ERROR: %s\n", err);
+    }
+    else {
+        print_object(&obj);
+    }
 
     free_object(&obj);
-
     free_expr(expr);
 }
 
@@ -522,9 +531,11 @@ static bool object_is_equal(const object_t* left, const object_t* right)
     }
 }
 
-object_t interpret_expr(expr_t* expr)
+object_t interpret_expr(expr_t* expr, const char** out_err)
 {
     object_t obj = {0};
+    const char* err = NULL;
+
     switch (expr->type)
     {
         case EXPR_LITERAL:
@@ -563,7 +574,10 @@ object_t interpret_expr(expr_t* expr)
         case EXPR_UNARY:
         {
             expr_unary_t* e = (expr_unary_t*)expr;
-            object_t right = interpret_expr(e->right);
+            object_t right = interpret_expr(e->right, &err);
+            if (err) {
+                break;
+            }
 
             switch (e->operator.type)
             {
@@ -574,7 +588,8 @@ object_t interpret_expr(expr_t* expr)
                         obj.val.num = -(right.val.num);
                     }
                     else {
-                        assert(false);
+                        err = "Operand must be a number";
+                        break;
                     }
                 } break;
 
@@ -591,15 +606,20 @@ object_t interpret_expr(expr_t* expr)
         case EXPR_BINARY:
         {
             expr_binary_t* e = (expr_binary_t*)expr;
-            object_t left = interpret_expr(e->left);
-            object_t right = interpret_expr(e->right);
+            object_t left = interpret_expr(e->left, NULL);
+            object_t right = interpret_expr(e->right, NULL);
+            if (err) {
+                break;
+            }
 
             switch (e->operator.type)
             {
                 case TOKEN_STAR:
                 {
-                    assert(left.type == OBJECT_NUMBER);
-                    assert(right.type == OBJECT_NUMBER);
+                    if ((left.type != right.type) || (left.type != OBJECT_NUMBER)) {
+                        err = "Operands must be numbers";
+                        break;
+                    }
 
                     obj.type = OBJECT_NUMBER;
                     obj.val.num = left.val.num * right.val.num;
@@ -607,8 +627,10 @@ object_t interpret_expr(expr_t* expr)
 
                 case TOKEN_MINUS:
                 {
-                    assert(left.type == OBJECT_NUMBER);
-                    assert(right.type == OBJECT_NUMBER);
+                    if ((left.type != right.type) || (left.type != OBJECT_NUMBER)) {
+                        err = "Operands must be numbers";
+                        break;
+                    }
 
                     obj.type = OBJECT_NUMBER;
                     obj.val.num = left.val.num - right.val.num;
@@ -616,8 +638,10 @@ object_t interpret_expr(expr_t* expr)
 
                 case TOKEN_SLASH:
                 {
-                    assert(left.type == OBJECT_NUMBER);
-                    assert(right.type == OBJECT_NUMBER);
+                    if ((left.type != right.type) || (left.type != OBJECT_NUMBER)) {
+                        err = "Operands must be numbers";
+                        break;
+                    }
 
                     obj.type = OBJECT_NUMBER;
                     obj.val.num = left.val.num / right.val.num;
@@ -639,14 +663,17 @@ object_t interpret_expr(expr_t* expr)
                         obj.val.str = str;
                     }
                     else {
-                        assert(false);
+                        err = "Operands must be two numbers or two strings";
+                        break;
                     }
                 } break;
 
                 case TOKEN_GREATER:
                 {
-                    assert(left.type == OBJECT_NUMBER);
-                    assert(right.type == OBJECT_NUMBER);
+                    if ((left.type != right.type) || (left.type != OBJECT_NUMBER)) {
+                        err = "Operands must be numbers";
+                        break;
+                    }
 
                     obj.type = OBJECT_BOOL;
                     obj.val.boolean = left.val.num > right.val.num;
@@ -654,8 +681,10 @@ object_t interpret_expr(expr_t* expr)
 
                 case TOKEN_LESS:
                 {
-                    assert(left.type == OBJECT_NUMBER);
-                    assert(right.type == OBJECT_NUMBER);
+                    if ((left.type != right.type) || (left.type != OBJECT_NUMBER)) {
+                        err = "Operands must be numbers";
+                        break;
+                    }
 
                     obj.type = OBJECT_BOOL;
                     obj.val.boolean = left.val.num < right.val.num;
@@ -663,8 +692,10 @@ object_t interpret_expr(expr_t* expr)
 
                 case TOKEN_GREATER_EQUAL:
                 {
-                    assert(left.type == OBJECT_NUMBER);
-                    assert(right.type == OBJECT_NUMBER);
+                    if ((left.type != right.type) || (left.type != OBJECT_NUMBER)) {
+                        err = "Operands must be numbers";
+                        break;
+                    }
 
                     obj.type = OBJECT_BOOL;
                     obj.val.boolean = left.val.num >= right.val.num;
@@ -672,8 +703,10 @@ object_t interpret_expr(expr_t* expr)
 
                 case TOKEN_LESS_EQUAL:
                 {
-                    assert(left.type == OBJECT_NUMBER);
-                    assert(right.type == OBJECT_NUMBER);
+                    if ((left.type != right.type) || (left.type != OBJECT_NUMBER)) {
+                        err = "Operands must be numbers";
+                        break;
+                    }
 
                     obj.type = OBJECT_BOOL;
                     obj.val.boolean = left.val.num <= right.val.num;
@@ -699,6 +732,10 @@ object_t interpret_expr(expr_t* expr)
         default: assert(false);
     }
 
+    if (out_err)
+    {
+        *out_err = err;
+    }
     return obj;
 }
 
