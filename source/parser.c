@@ -115,6 +115,42 @@ static inline token_t get_token()
     return tok;
 }
 
+static void free_expr(expr_t* expr)
+{
+    switch (expr->type)
+    {
+        case EXPR_BINARY:
+        {
+            expr_binary_t* e = (expr_binary_t*)expr;
+
+            free_expr(e->left);
+            free_expr(e->right);
+        } break;
+
+        case EXPR_GROUPING:
+        {
+            expr_grouping_t* e = (expr_grouping_t*)expr;
+
+            free_expr(e->inner);
+        } break;
+
+        case EXPR_LITERAL:
+        {
+            expr_literal_t* e = (expr_literal_t*)expr;
+            (void)e;
+        } break;
+
+        case EXPR_UNARY:
+        {
+            expr_unary_t* e = (expr_unary_t*)expr;
+
+            free_expr(e->right);
+        } break;
+    }
+
+    free(expr);
+}
+
 void parse(token_list_t* _tokens)
 {
     curr = 0;
@@ -126,6 +162,8 @@ void parse(token_list_t* _tokens)
     printf("Expr Str: %s\n", str);
 
     free(str);
+
+    free_expr(expr);
 }
 
 static expr_t* parse_expr()
