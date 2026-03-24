@@ -55,7 +55,7 @@ typedef struct
     object_type_t type;
     union {
         float num;
-        const char* str;
+        char* str;
         bool boolean;
     } val;
 } expr_literal_t;
