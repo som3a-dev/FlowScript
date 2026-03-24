@@ -546,6 +546,11 @@ static char* expr_to_str(const expr_t* expr)
                     str = malloc(strlen(e->val.str) + 1);
                     strcpy(str, e->val.str);
                 } break;
+
+                case OBJECT_NIL:
+                {
+                    
+                } break;
             }
 
             assert(str);
