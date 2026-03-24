@@ -67,6 +67,7 @@ typedef struct
 static expr_t* parse_expr();
 static void free_expr(expr_t* expr);
 
+static expr_t* parse_series();
 static expr_t* parse_equality();
 static expr_t* parse_comparison();
 static expr_t* parse_term();
@@ -137,7 +138,7 @@ void parse(token_list_t* _tokens)
 
 static expr_t* parse_expr()
 {
-    return parse_equality();
+    return parse_series();
 }
 
 static void free_expr(expr_t* expr)
@@ -206,6 +207,35 @@ static inline expr_grouping_t* new_grouping_expr()
     expr->e.type = EXPR_GROUPING;
 
     return expr;
+}
+
+static expr_t* parse_series()
+{
+    expr_t* expr = parse_equality();
+    if (expr == NULL)
+    {
+        return NULL;
+    }
+
+    token_t tok = get_token();
+    while (str_equal(tok.lexeme, 1, ","))
+    {
+        curr++;
+
+        expr_t* right = parse_equality();
+
+        expr_binary_t* new_expr = new_binary_expr();
+
+        new_expr->left = expr;
+        new_expr->right = right;
+        new_expr->operator = tok;
+
+        expr = (expr_t*)new_expr;
+
+        tok = get_token();
+    }
+
+    return (expr_t*)expr;
 }
 
 static expr_t* parse_equality()
