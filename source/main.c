@@ -19,6 +19,7 @@
 #endif
 #include <crtdbg.h>
 
+#include "interpreter.h"
 #include "parser.h"
 #include "scanner.h"
 
@@ -70,8 +71,12 @@ int main(void)
 			token_print(tokens.tokens[i]);
 		}
 
-		parse(&tokens);
+		expr_t* expr_tree = parse(&tokens);
 
+		print_expr(expr_tree);
+		interpret(expr_tree);
+
+		free_expr(expr_tree);
 		token_list_delete(&tokens);
 
 		buf[0] = '\0'; // clear the buffer

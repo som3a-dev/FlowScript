@@ -5,6 +5,7 @@
 //TODO(omar): move interpreter code away from here
 
 #include "parser.h"
+#include "interpreter.h"
 
 #include <assert.h>
 
@@ -13,79 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef enum
-{
-    EXPR_BINARY,
-    EXPR_GROUPING,
-    EXPR_LITERAL,
-    EXPR_UNARY
-} expr_type_t;
-
-typedef struct
-{
-    expr_type_t type;
-} expr_t;
-
-typedef struct
-{
-    expr_t e;
-
-    expr_t* left;
-    token_t operator;
-    expr_t* right;
-} expr_binary_t;
-
-typedef struct
-{
-    expr_t e;
-
-    token_t operator;
-    expr_t* right;
-} expr_unary_t;
-
-typedef enum
-{
-    OBJECT_BOOL,
-    OBJECT_STRING,
-    OBJECT_NUMBER,
-    OBJECT_NIL
-} object_type_t;
-
-typedef struct
-{
-    expr_t e;
-
-    // technically an object and a literal are not the same thing
-    // and probably shouldn't share a type enum
-    // but we don't care for now
-    object_type_t type;
-    union {
-        float num;
-        char* str;
-        bool boolean;
-    } val;
-} expr_literal_t;
-
-typedef struct
-{
-    expr_t e;
-
-    expr_t* inner;
-} expr_grouping_t;
-
-typedef struct
-{
-    object_type_t type;
-    union {
-        float num;
-        char* str;
-        bool boolean;
-    } val;
-} object_t;
-
-
 static expr_t* parse_expr();
-static void free_expr(expr_t* expr);
 
 static expr_t* parse_series();
 static expr_t* parse_equality();
@@ -94,11 +23,6 @@ static expr_t* parse_term();
 static expr_t* parse_factor();
 static expr_t* parse_unary();
 static expr_t* parse_primary();
-
-object_t interpret_expr(expr_t* expr, const char** out_err);
-
-static void free_object(object_t* obj);
-static void print_object(const object_t* obj);
 
 static char* expr_to_str(const expr_t* expr);
 
@@ -143,32 +67,13 @@ static inline token_t get_token()
     return tok;
 }
 
-void parse(token_list_t* _tokens)
+expr_t* parse(token_list_t* _tokens)
 {
     curr = 0;
     tokens = _tokens;
 
     expr_t* expr = parse_expr();
-    if (expr == NULL)
-    {
-        return;
-    }
-
-    char* str = expr_to_str(expr);
-    printf("Expr Str: %s\n", str);
-    free(str);
-
-    const char* err = NULL;
-    object_t obj = interpret_expr(expr, &err);
-    if (err) {
-        printf("RUNTIME ERROR: %s\n", err);
-    }
-    else {
-        print_object(&obj);
-    }
-
-    free_object(&obj);
-    free_expr(expr);
+    return expr;
 }
 
 static expr_t* parse_expr()
@@ -176,8 +81,12 @@ static expr_t* parse_expr()
     return parse_series();
 }
 
-static void free_expr(expr_t* expr)
+void free_expr(expr_t* expr)
 {
+    if (!expr) {
+        return;
+    }
+
     switch (expr->type)
     {
         case EXPR_BINARY:
@@ -210,6 +119,13 @@ static void free_expr(expr_t* expr)
     }
 
     free(expr);
+}
+
+void print_expr(const expr_t *expr)
+{
+    char* str = expr_to_str(expr);
+    printf("%s\n", str);
+    free(str);
 }
 
 static inline expr_binary_t* new_binary_expr()
@@ -479,310 +395,23 @@ static expr_t* parse_primary()
             expr->inner = inner;
             return (expr_t*)expr;
         } break;
+
+        case TOKEN_IDENTIFIER:
+        {
+            assert(false && "IDENTIFIERS UNIMPLEMENTED");
+        } break;
     }
 
     printf("PARSER ERROR: Expected an expression\n");
     return NULL;
 }
 
-static bool object_is_truthy(const object_t* obj)
-{
-    switch (obj->type)
-    {
-        case OBJECT_BOOL:
-        {
-            return (obj->val.boolean);
-        } break;
-
-        case OBJECT_NIL:
-        {
-            return false;
-        } break;
-
-        default:
-        {
-            return true;
-        } break;
-    }
-}
-
-static bool object_is_equal(const object_t* left, const object_t* right)
-{
-    if (left->type != right->type)
-    {
-        return false;
-    }
-
-    switch (left->type)
-    {
-        case OBJECT_STRING:
-        {
-            return (strcmp(left->val.str, right->val.str) == 0);
-        } break;
-
-        case OBJECT_NIL:
-        {
-            return true;
-        } break;
-
-        // this will work for any object type where the value is encoded in val
-        default:
-        {
-            return left->val.num == right->val.num;
-        } break;
-    }
-}
-
-object_t interpret_expr(expr_t* expr, const char** out_err)
-{
-    object_t obj = {0};
-    const char* err = NULL;
-
-    switch (expr->type)
-    {
-        case EXPR_LITERAL:
-        {
-            expr_literal_t* e = (expr_literal_t*)expr;
-            obj.type = e->type; 
-            
-            switch (obj.type)
-            {
-                case OBJECT_STRING:
-                {
-                    obj.val.str = malloc(sizeof(char) * (strlen(e->val.str) + 1));
-                    strcpy(obj.val.str, e->val.str);
-                } break;
-
-                case OBJECT_BOOL:
-                {
-                    obj.val.boolean = e->val.boolean;
-                } break;
-
-                case OBJECT_NUMBER:
-                {
-                    obj.val.num = e->val.num;
-                } break;
-
-                case OBJECT_NIL:
-                {
-                    // TODO(omar): implement nil (everywhere)
-                } break;
-
-                default: assert(false);
-            }
-
-        } break;
-
-        case EXPR_UNARY:
-        {
-            expr_unary_t* e = (expr_unary_t*)expr;
-            object_t right = interpret_expr(e->right, &err);
-            if (err) {
-                break;
-            }
-
-            switch (e->operator.type)
-            {
-                case TOKEN_MINUS:
-                {
-                    if (right.type == OBJECT_NUMBER) {
-                        obj.type = OBJECT_NUMBER;
-                        obj.val.num = -(right.val.num);
-                    }
-                    else {
-                        err = "Operand must be a number";
-                        break;
-                    }
-                } break;
-
-                case TOKEN_BANG:
-                {
-                    obj.type = OBJECT_BOOL;
-                    obj.val.boolean = !(object_is_truthy(&right));
-                } break;
-
-                default: assert(false);
-            }
-        } break;
-
-        case EXPR_BINARY:
-        {
-            expr_binary_t* e = (expr_binary_t*)expr;
-            object_t left = interpret_expr(e->left, NULL);
-            object_t right = interpret_expr(e->right, NULL);
-            if (err) {
-                break;
-            }
-
-            switch (e->operator.type)
-            {
-                case TOKEN_STAR:
-                {
-                    if ((left.type != right.type) || (left.type != OBJECT_NUMBER)) {
-                        err = "Operands must be numbers";
-                        break;
-                    }
-
-                    obj.type = OBJECT_NUMBER;
-                    obj.val.num = left.val.num * right.val.num;
-                }  break;
-
-                case TOKEN_MINUS:
-                {
-                    if ((left.type != right.type) || (left.type != OBJECT_NUMBER)) {
-                        err = "Operands must be numbers";
-                        break;
-                    }
-
-                    obj.type = OBJECT_NUMBER;
-                    obj.val.num = left.val.num - right.val.num;
-                } break;
-
-                case TOKEN_SLASH:
-                {
-                    if ((left.type != right.type) || (left.type != OBJECT_NUMBER)) {
-                        err = "Operands must be numbers";
-                        break;
-                    }
-
-                    obj.type = OBJECT_NUMBER;
-                    obj.val.num = left.val.num / right.val.num;
-                } break;
-
-                case TOKEN_PLUS:
-                {
-                    if ((left.type == OBJECT_NUMBER) && (right.type == OBJECT_NUMBER)) {
-                        obj.type = OBJECT_NUMBER;
-                        obj.val.num = left.val.num + right.val.num;
-                    }
-                    else if ((left.type == OBJECT_STRING) && (right.type == OBJECT_STRING)) {
-                        size_t str_len = strlen(left.val.str) + strlen(left.val.str);
-                        char* str = malloc(sizeof(char) * (str_len + 1));
-
-                        snprintf(str, str_len + 1, "%s%s", left.val.str, right.val.str);
-
-                        obj.type = OBJECT_STRING;
-                        obj.val.str = str;
-                    }
-                    else {
-                        err = "Operands must be two numbers or two strings";
-                        break;
-                    }
-                } break;
-
-                case TOKEN_GREATER:
-                {
-                    if ((left.type != right.type) || (left.type != OBJECT_NUMBER)) {
-                        err = "Operands must be numbers";
-                        break;
-                    }
-
-                    obj.type = OBJECT_BOOL;
-                    obj.val.boolean = left.val.num > right.val.num;
-                } break;
-
-                case TOKEN_LESS:
-                {
-                    if ((left.type != right.type) || (left.type != OBJECT_NUMBER)) {
-                        err = "Operands must be numbers";
-                        break;
-                    }
-
-                    obj.type = OBJECT_BOOL;
-                    obj.val.boolean = left.val.num < right.val.num;
-                } break;
-
-                case TOKEN_GREATER_EQUAL:
-                {
-                    if ((left.type != right.type) || (left.type != OBJECT_NUMBER)) {
-                        err = "Operands must be numbers";
-                        break;
-                    }
-
-                    obj.type = OBJECT_BOOL;
-                    obj.val.boolean = left.val.num >= right.val.num;
-                } break;
-
-                case TOKEN_LESS_EQUAL:
-                {
-                    if ((left.type != right.type) || (left.type != OBJECT_NUMBER)) {
-                        err = "Operands must be numbers";
-                        break;
-                    }
-
-                    obj.type = OBJECT_BOOL;
-                    obj.val.boolean = left.val.num <= right.val.num;
-                } break;
-
-                case TOKEN_BANG_EQUAL:
-                {
-                    obj.type = OBJECT_BOOL;
-                    obj.val.boolean = !object_is_equal(&left, &right) ;
-                } break;
-
-                case TOKEN_EQUAL_EQUAL:
-                {
-                    obj.type = OBJECT_BOOL;
-                    obj.val.boolean = object_is_equal(&left, &right) ;
-                } break;
-            }
-
-            free_object(&left);
-            free_object(&right);
-        } break;
-
-        default: assert(false);
-    }
-
-    if (out_err)
-    {
-        *out_err = err;
-    }
-    return obj;
-}
-
-void free_object(object_t* obj)
-{
-    if (obj->type == OBJECT_STRING) {
-        free(obj->val.str);
-    }
-}
-
-void print_object(const object_t *obj)
-{
-    switch (obj->type)
-    {
-        case OBJECT_BOOL:
-        {
-            if (obj->val.boolean) {
-                printf("true\n");
-            }
-            else {
-                printf("false\n");
-            }
-        } break;
-
-        case OBJECT_NUMBER:
-        {
-            printf("%f\n", obj->val.num);
-        } break;
-
-        case OBJECT_STRING:
-        {
-            printf("%s\n", obj->val.str);
-        } break;
-
-        case OBJECT_NIL:
-        {
-            printf("nil\n");
-        } break;
-
-        default: assert(false);
-    }
-}
-
 static char* expr_to_str(const expr_t* expr)
 {
+    if (!expr) {
+        return NULL;
+    }
+
     switch (expr->type)
     {
         case EXPR_BINARY:
