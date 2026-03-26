@@ -80,6 +80,10 @@ stmt_list_t parse(token_list_t* _tokens)
     while (curr < tokens->len)
     {
         stmt_t* stmt = parse_stmt();
+        if (!stmt) {
+            break;
+        }
+
         stmt_list_push(&list, stmt);
     }
 
