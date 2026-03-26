@@ -57,7 +57,7 @@ static bool at_end(const token_scanner_t* scan);
 
 static token_type_t get_type_from_keyword(const char* lexeme);
 
-token_list_t token_scanner_scan(const char* input)
+token_list_t scan(const char* input)
 {
 	token_scanner_t scan = {0};
 	scan.line = 1;

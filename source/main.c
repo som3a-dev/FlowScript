@@ -64,18 +64,11 @@ int main(void)
 			continue;
 		}
 
-		token_list_t tokens = token_scanner_scan(buf);
-
-		for (int i = 0; i < tokens.len; i++)
-		{
-			token_print(tokens.tokens[i]);
-		}
-
+		token_list_t tokens = scan(buf);
 		stmt_list_t stmts = parse(&tokens);
-		stmt_list_print(&stmts);
+		interpret(&stmts);
 
 		stmt_list_free(&stmts);
-
 		token_list_delete(&tokens);
 
 		buf[0] = '\0'; // clear the buffer

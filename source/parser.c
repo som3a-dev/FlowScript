@@ -87,9 +87,6 @@ stmt_list_t parse(token_list_t* _tokens)
         stmt_list_push(&list, stmt);
     }
 
-/*    expr_t* expr = parse_expr();
-    return expr; */
-
     return list;
 }
 

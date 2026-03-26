@@ -55,7 +55,7 @@ typedef struct
 	bool has_error;
 } token_list_t;
 
-token_list_t token_scanner_scan(const char* input);
+token_list_t scan(const char* input);
 
 void token_print(token_t token);
 void token_list_delete(token_list_t* list);

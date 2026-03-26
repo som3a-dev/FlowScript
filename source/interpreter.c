@@ -5,14 +5,15 @@
 #include <string.h>
 #include <assert.h>
 
+static void interpret_stmt(const stmt_t* stmt, const char** out_err);
 static object_t interpret_expr(const expr_t* expr, const char** out_err);
 static bool object_is_truthy(const object_t* obj);
 static bool object_is_equal(const object_t* left, const object_t* right);
 
-void interpret(const expr_t* expr)
+void interpret(const stmt_list_t* stmts)
 {
     const char* err = NULL;
-    object_t obj = interpret_expr(expr, &err);
+/*    object_t obj = interpret_expr(expr, &err);
     if (err) {
         printf("RUNTIME ERROR: %s\n", err);
     }
@@ -20,12 +21,57 @@ void interpret(const expr_t* expr)
         print_object(&obj);
     }
 
-    free_object(&obj);
+    free_object(&obj); */
+
+    for (int i = 0; i < stmts->len; i++)
+    {
+        interpret_stmt(stmts->stmts[i], &err);
+        if (err) {
+            printf("RUNTIME ERROR: %s\n", err);
+            break;
+        }
+    }
+}
+
+static void interpret_stmt(const stmt_t* stmt, const char** out_err)
+{
+    if (!stmt) {
+        if (out_err) {
+            *out_err = "Invalid Statement";
+        }
+
+        return;
+    }
+
+    const char* err = NULL;
+
+    switch (stmt->type)
+    {
+        case STMT_PRINT:
+        {
+            const stmt_print_t* s = (stmt_print_t*)stmt;
+            object_t obj = interpret_expr(s->expr, &err);
+            if (obj.type != _OBJECT_INVALID) {
+                print_object(&obj);
+                free_object(&obj);
+            }
+        } break;
+
+        case STMT_EXPR:
+        {
+            const stmt_expr_t* s = (stmt_expr_t*)stmt;
+            object_t obj = interpret_expr(s->expr, &err);
+            if (obj.type != _OBJECT_INVALID) {
+                free_object(&obj);
+            }
+        } break;
+    }
 }
 
 static object_t interpret_expr(const expr_t* expr, const char** out_err)
 {
     object_t obj = {0};
+    obj.type = _OBJECT_INVALID;
 
     if (!expr) {
         if (out_err) {
