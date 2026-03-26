@@ -56,13 +56,16 @@ static bool str_equal(const char* str, int n, ...)
 static int curr = 0;
 static token_list_t* tokens = NULL;
 
-static inline token_t get_token()
+static inline token_t get_token(bool advance)
 {
     token_t tok = {0};
     tok.type = TOKEN_NONE;
 
     if (curr < tokens->len) {
         tok = tokens->tokens[curr];
+        if (advance) {
+            curr++;
+        }
     }
 
     return tok;
@@ -91,7 +94,7 @@ static stmt_expr_t* parse_expr_stmt();
 
 static stmt_t* parse_stmt()
 {
-    token_t tok = get_token();
+    token_t tok = get_token(false);
     if (tok.type == TOKEN_PRINT) {
         curr++;
 
@@ -108,8 +111,7 @@ static stmt_print_t* parse_print_stmt()
         return NULL;
     }
 
-    token_t tok = get_token();
-    curr++;
+    token_t tok = get_token(true);
     if (tok.type != TOKEN_SEMICOLON) {
         printf("PARSER ERROR: Expected ';' after value.\n");
         free_expr(expr);
@@ -130,8 +132,7 @@ static stmt_expr_t* parse_expr_stmt()
         return NULL;
     }
 
-    token_t tok = get_token();
-    curr++;
+    token_t tok = get_token(true);
     if (tok.type != TOKEN_SEMICOLON) {
         printf("PARSER ERROR: Expected ';' after value.\n");
         free_expr(expr);
@@ -315,7 +316,7 @@ static expr_t* parse_series()
         return NULL;
     }
 
-    token_t tok = get_token();
+    token_t tok = get_token(false);
     while (str_equal(tok.lexeme, 1, ","))
     {
         curr++;
@@ -330,7 +331,7 @@ static expr_t* parse_series()
 
         expr = (expr_t*)new_expr;
 
-        tok = get_token();
+        tok = get_token(false);
     }
 
     return (expr_t*)expr;
@@ -344,7 +345,7 @@ static expr_t* parse_equality()
         return NULL;
     }
 
-    token_t tok = get_token();
+    token_t tok = get_token(false);
     while (str_equal(tok.lexeme, 2, "==", "!="))
     {
         curr++;
@@ -358,7 +359,7 @@ static expr_t* parse_equality()
 
         expr = (expr_t*)new_expr;
 
-        tok = get_token();
+        tok = get_token(false);
     }
 
     return (expr_t*)expr;
@@ -372,7 +373,7 @@ static expr_t* parse_comparison()
         return NULL;
     }
 
-    token_t tok = get_token();
+    token_t tok = get_token(false);
     while (str_equal(tok.lexeme, 4, ">", ">=", "<=", "<"))
     {
         curr++;
@@ -386,7 +387,7 @@ static expr_t* parse_comparison()
 
         expr = (expr_t*)new_expr;
         
-        tok = get_token();
+        tok = get_token(false);
     }
 
     return (expr_t*)expr;
@@ -400,7 +401,7 @@ static expr_t* parse_term()
         return NULL;
     }
 
-    token_t tok = get_token();
+    token_t tok = get_token(false);
     while (str_equal(tok.lexeme, 2, "-", "+"))
     {
         curr++;
@@ -414,7 +415,7 @@ static expr_t* parse_term()
 
         expr = (expr_t*)new_expr;
 
-        tok = get_token();
+        tok = get_token(false);
     }
 
     return (expr_t*)expr;
@@ -428,7 +429,7 @@ static expr_t* parse_factor()
         return NULL;
     }
 
-    token_t tok = get_token();
+    token_t tok = get_token(false);
     while (str_equal(tok.lexeme, 2, "/", "*"))
     {
         curr++;
@@ -442,7 +443,7 @@ static expr_t* parse_factor()
 
         expr = (expr_t*)new_expr;
         
-        tok = get_token();
+        tok = get_token(false);
     }
 
     return (expr_t*)expr;
@@ -450,7 +451,7 @@ static expr_t* parse_factor()
 
 static expr_t* parse_unary()
 {
-    token_t tok = get_token();
+    token_t tok = get_token(false);
     if (str_equal(tok.lexeme, 2, "!", "-")) 
     {
         curr++;
@@ -466,7 +467,7 @@ static expr_t* parse_unary()
 
 static expr_t* parse_primary()
 {
-    token_t tok = get_token();
+    token_t tok = get_token(false);
     
     switch (tok.type)
     {
@@ -529,7 +530,7 @@ static expr_t* parse_primary()
             curr++;
 
             expr_t* inner = parse_expr();
-            token_t current = get_token();
+            token_t current = get_token(false);
 
             if (!str_equal(current.lexeme, 1, ")"))
             {
