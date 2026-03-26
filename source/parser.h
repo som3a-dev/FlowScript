@@ -63,9 +63,51 @@ typedef struct
     expr_t* inner;
 } expr_grouping_t;
 
-expr_t* parse(token_list_t* _tokens);
-void free_expr(expr_t* expr);
 
+//STATEMENTS
+
+typedef enum
+{
+    STMT_EXPR,
+    STMT_PRINT
+} stmt_type_t;
+
+typedef struct
+{
+    stmt_type_t type;
+} stmt_t;
+
+typedef struct
+{
+    stmt_t s;
+    expr_t* expr;
+} stmt_expr_t;
+
+typedef struct
+{
+    stmt_t s;
+    expr_t* expr;
+} stmt_print_t;
+
+/*
+* This is a list of statements (like token_list_t), not a list statement
+*/
+typedef struct
+{
+    stmt_t** stmts;
+    int len;
+} stmt_list_t;
+
+stmt_list_t parse(token_list_t* _tokens);
+
+void free_expr(expr_t* expr);
 void print_expr(const expr_t* expr);
+
+void free_stmt(stmt_t* stmt);
+void print_stmt(const stmt_t* stmt);
+
+void stmt_list_push(stmt_list_t* list, stmt_t* stmt);
+void stmt_list_print(const stmt_list_t* list);
+void stmt_list_free(stmt_list_t* list);
 
 #endif

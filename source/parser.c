@@ -2,7 +2,6 @@
 
 //TODO(omar): add token info to errors
 //TODO(omar): handle division by zero ourselves
-//TODO(omar): move interpreter code away from here
 
 #include "parser.h"
 #include "interpreter.h"
@@ -14,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+static stmt_t* parse_stmt();
 static expr_t* parse_expr();
 
 static expr_t* parse_series();
@@ -25,6 +25,7 @@ static expr_t* parse_unary();
 static expr_t* parse_primary();
 
 static char* expr_to_str(const expr_t* expr);
+static char* stmt_to_str(const stmt_t* stmt);
 
 static bool str_equal(const char* str, int n, ...)
 {
@@ -67,18 +68,162 @@ static inline token_t get_token()
     return tok;
 }
 
-expr_t* parse(token_list_t* _tokens)
+stmt_list_t parse(token_list_t* _tokens)
 {
     curr = 0;
     tokens = _tokens;
 
+    stmt_list_t list = {0};
+    while (curr < tokens->len)
+    {
+        stmt_t* stmt = parse_stmt();
+        stmt_list_push(&list, stmt);
+    }
+
+/*    expr_t* expr = parse_expr();
+    return expr; */
+
+    return list;
+}
+
+static stmt_print_t* parse_print_stmt();
+static stmt_expr_t* parse_expr_stmt();
+
+static stmt_t* parse_stmt()
+{
+    token_t tok = get_token();
+    if (tok.type == TOKEN_PRINT) {
+        curr++;
+
+        return (stmt_t*)(parse_print_stmt());
+    }
+
+    return (stmt_t*)(parse_expr_stmt());
+}
+
+static stmt_print_t* parse_print_stmt()
+{
     expr_t* expr = parse_expr();
-    return expr;
+    if (!expr) {
+        return NULL;
+    }
+
+    token_t tok = get_token();
+    curr++;
+    if (tok.type != TOKEN_SEMICOLON) {
+        printf("PARSER ERROR: Expected ';' after value.\n");
+        free_expr(expr);
+        return NULL;
+    }
+
+    stmt_print_t* stmt = malloc(sizeof(stmt_print_t));
+    stmt->s.type = STMT_PRINT;
+    stmt->expr = expr;
+
+    return stmt;
+}
+
+static stmt_expr_t* parse_expr_stmt()
+{
+    expr_t* expr = parse_expr();
+    if (!expr) {
+        return NULL;
+    }
+
+    token_t tok = get_token();
+    curr++;
+    if (tok.type != TOKEN_SEMICOLON) {
+        printf("PARSER ERROR: Expected ';' after value.\n");
+        free_expr(expr);
+        return NULL;
+    }
+
+    stmt_expr_t* stmt = malloc(sizeof(stmt_expr_t));
+    stmt->s.type = STMT_EXPR;
+    stmt->expr = expr;
+
+    return stmt;
+}
+
+void stmt_list_push(stmt_list_t* list, stmt_t* stmt)
+{
+    assert(list);
+    if (!stmt) {
+        return;
+    }
+
+    list->len++;
+
+    if (list->stmts) {
+        list->stmts = realloc(list->stmts, sizeof(stmt_t*) * list->len);
+    }
+    else {
+        list->stmts = malloc(sizeof(stmt_t*) * list->len);
+    }
+    
+    list->stmts[list->len-1] = stmt;
+}
+
+void stmt_list_print(const stmt_list_t* list)
+{
+    assert(list);
+
+    for (int i = 0; i < list->len; i++)
+    {
+        char* str = stmt_to_str(list->stmts[i]);
+        printf("%s\n", str);
+        free(str);
+    }
+}
+
+void stmt_list_free(stmt_list_t* list)
+{
+    assert(list);
+
+    for (int i = 0; i < list->len; i++)
+    {
+        free_stmt(list->stmts[i]);
+    }
+
+    free(list->stmts);
 }
 
 static expr_t* parse_expr()
 {
     return parse_series();
+}
+
+void free_stmt(stmt_t* stmt)
+{
+    if (!stmt) {
+        return;
+    }
+
+    switch (stmt->type)
+    {
+        case STMT_EXPR:
+        {
+            stmt_expr_t* s = (stmt_expr_t*)stmt;
+            free_expr(s->expr);
+        } break;
+
+        case STMT_PRINT:
+        {
+            stmt_print_t* s = (stmt_print_t*)stmt;
+            free_expr(s->expr);
+        } break;
+
+        default: assert(false);
+    }
+
+    free(stmt);
+}
+
+void print_stmt(const stmt_t* stmt)
+{
+    char* str = stmt_to_str(stmt);
+    printf("%s\n", str);
+    free(str);
 }
 
 void free_expr(expr_t* expr)
@@ -116,6 +261,8 @@ void free_expr(expr_t* expr)
 
             free_expr(e->right);
         } break;
+
+        default: assert(false);
     }
 
     free(expr);
@@ -403,6 +550,48 @@ static expr_t* parse_primary()
     }
 
     printf("PARSER ERROR: Expected an expression\n");
+    return NULL;
+}
+
+static char* stmt_to_str(const stmt_t* stmt)
+{
+    if (!stmt) {
+        return NULL;
+    }
+
+    switch (stmt->type)
+    {
+        case STMT_EXPR:
+        {
+            stmt_expr_t* s = (stmt_expr_t*)stmt;
+            const char* prefix = "EXPRESSION STATEMENT: ";
+
+            char* exp_str = expr_to_str(s->expr);
+            size_t str_size = sizeof(char) * (strlen(exp_str) + strlen(prefix) + 1);
+
+            char* str = malloc(str_size);
+            snprintf(str, str_size, "%s%s", prefix, exp_str);
+            free(exp_str);
+
+            return str;
+        } break;
+
+        case STMT_PRINT:
+        {
+            stmt_print_t* s = (stmt_print_t*)stmt;
+            const char* prefix = "PRINT STATEMENT: ";
+
+            char* exp_str = expr_to_str(s->expr);
+            size_t str_size = sizeof(char) * (strlen(exp_str) + strlen(prefix) + 1);
+
+            char* str = malloc(str_size);
+            snprintf(str, str_size, "%s%s", prefix, exp_str);
+            free(exp_str);
+
+            return str;
+        } break;
+    }
+
     return NULL;
 }
 

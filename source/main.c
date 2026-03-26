@@ -71,12 +71,11 @@ int main(void)
 			token_print(tokens.tokens[i]);
 		}
 
-		expr_t* expr_tree = parse(&tokens);
+		stmt_list_t stmts = parse(&tokens);
+		stmt_list_print(&stmts);
 
-		print_expr(expr_tree);
-		interpret(expr_tree);
+		stmt_list_free(&stmts);
 
-		free_expr(expr_tree);
 		token_list_delete(&tokens);
 
 		buf[0] = '\0'; // clear the buffer
