@@ -30,6 +30,8 @@ static bool running = true;
 
 static bool exec_command(const char* input);
 
+static void read_input_file(const char* filename);
+
 static void clear_stdout();
 
 /*
@@ -46,13 +48,14 @@ static int get_substr_delim_count(const char* str, char delim);
 static void init_crtdbg();
 static void dump_crtdbg();
 
+static char buf[MAX_INPUT_SIZE];
+
 int main(void)
 {
 	#ifdef _DEBUG
 	init_crtdbg();
 	#endif
 
-	char buf[MAX_INPUT_SIZE];
 	while (running)
 	{
 		printf("> ");
@@ -92,11 +95,21 @@ static bool exec_command(const char* input)
 
 	bool result = true;
 
-	if ((strcmp(input, ".cls") == 0) && count == 1) {
+	if ((strcmp(cmd, ".cls") == 0) && count == 1) {
 		clear_stdout();
 	}
-	else if ((strcmp(input, ".q") == 0) && count == 1) {
+	else if ((strcmp(cmd, ".q") == 0) && count == 1) {
 		running = false;
+	}
+	else if ((strcmp(cmd, ".run") == 0) && count == 2) {
+		char* filename = get_substr_delim(input, ' ', 1);
+		printf("Running file: '%s'\n", filename);
+		read_input_file(filename);
+
+		free(filename);
+
+		// To execute the input code we read
+		result = false;
 	}
 	else {
 		result = false;
@@ -104,6 +117,19 @@ static bool exec_command(const char* input)
 
 	free(cmd);
 	return result;
+}
+
+void read_input_file(const char *filename)
+{
+	FILE* fp = fopen(filename, "r");
+	if (!fp) {
+		printf("IO ERROR: File could not be opened.\n");
+		return;
+	}
+
+	fread(buf, sizeof(char), MAX_INPUT_SIZE, fp);
+
+	fclose(fp);
 }
 
 static void clear_stdout()
@@ -147,6 +173,7 @@ static char* get_substr_delim(const char* str, char delim, int index)
 
 			if (current_index != index) {
 				result_len = 0;
+				continue;
 			}
 			else if (result_len != 0) { // avoid returning a string consisting of the delimiter as the result
 				result = calloc(result_len + 1, sizeof(char));
@@ -161,9 +188,9 @@ static char* get_substr_delim(const char* str, char delim, int index)
 		result_len++;
 	}
 
-	if ((current_index == -1) && index == 0) {
-		result = calloc(strlen(str) + 1, sizeof(char));
-		strcpy(result, str);
+	if ((current_index == index-1)) {
+		result = calloc(result_len + 1, sizeof(char));
+		strcpy(result, str + strlen(str) - result_len);
 	}
 
 	return result;
