@@ -4,6 +4,6 @@
 #include "parser.h"
 #include "object.h"
 
-void interpret(const stmt_list_t* stmts);
+void interpret(const declaration_list_t* stmts);
 
 #endif

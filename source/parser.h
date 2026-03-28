@@ -8,8 +8,8 @@
 #ifndef _PARSER_H
 #define _PARSER_H
 
-#include "scanner.h"
 #include "object.h"
+#include "scanner.h"
 
 typedef enum
 {
@@ -63,8 +63,9 @@ typedef struct
     expr_t* inner;
 } expr_grouping_t;
 
+// STATEMENTS
 
-//STATEMENTS
+
 
 typedef enum
 {
@@ -89,16 +90,49 @@ typedef struct
     expr_t* expr;
 } stmt_print_t;
 
-/*
-* This is a list of statements (like token_list_t), not a list statement
-*/
+typedef enum
+{
+    DECLARATION_VAR, // variable declaration
+    DECLARATION_STMT // just a normal statement that doesn't declare anything
+} declaration_type_t;
+
+// A declaration is a statement that, may or may not declare a name.
+// A declaration can have a type of DECLARATION_STMT, which means it just falls
+// through to a normal statement and doesn't declare anything,
+// its a bit confusing, but this is how we ensure some types of statements
+// (like conditionals) are not allowed to declare names
 typedef struct
 {
-    stmt_t** stmts;
-    int len;
-} stmt_list_t;
+    declaration_type_t type;
+} declaration_t;
 
-stmt_list_t parse(token_list_t* _tokens);
+typedef struct
+{
+    declaration_t d;
+    token_t name;
+    expr_t* expr;
+} declaration_var_t;
+
+typedef struct
+{
+    declaration_t d;
+    stmt_t* stmt;
+} declaration_stmt_t;
+
+/*
+ * This is a list of declaration statements (like token_list_t), not a list
+ * declaration statement
+ */
+typedef struct
+{
+    declaration_t** stmts;
+    int len;
+} declaration_list_t;
+
+declaration_list_t parse(token_list_t* _tokens, bool* has_error);
+
+void free_declaration(declaration_t* d);
+void print_declaration(const declaration_t* d);
 
 void free_expr(expr_t* expr);
 void print_expr(const expr_t* expr);
@@ -106,8 +140,8 @@ void print_expr(const expr_t* expr);
 void free_stmt(stmt_t* stmt);
 void print_stmt(const stmt_t* stmt);
 
-void stmt_list_push(stmt_list_t* list, stmt_t* stmt);
-void stmt_list_print(const stmt_list_t* list);
-void stmt_list_free(stmt_list_t* list);
+void declaration_list_push(declaration_list_t* list, declaration_t* stmt);
+void declaration_list_print(const declaration_list_t* list);
+void declaration_list_free(declaration_list_t* list);
 
 #endif
