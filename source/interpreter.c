@@ -51,13 +51,15 @@ static void interpret_declaration(const declaration_t* d, const char** out_err)
 
     switch (d->type)
     {
-    case DECLARATION_VAR: {
+    case DECLARATION_VAR:
+    {
         const declaration_var_t* decl = (declaration_var_t*)d;
         (decl);
     }
     break;
 
-    case DECLARATION_STMT: {
+    case DECLARATION_STMT:
+    {
         const declaration_stmt_t* decl = (declaration_stmt_t*)d;
         interpret_stmt(decl->stmt, &err);
     }
@@ -81,7 +83,8 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
 
     switch (stmt->type)
     {
-    case STMT_PRINT: {
+    case STMT_PRINT:
+    {
         const stmt_print_t* s = (stmt_print_t*)stmt;
         object_t obj = interpret_expr(s->expr, &err);
         if (obj.type != _OBJECT_INVALID)
@@ -92,7 +95,8 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
     }
     break;
 
-    case STMT_EXPR: {
+    case STMT_EXPR:
+    {
         const stmt_expr_t* s = (stmt_expr_t*)stmt;
         object_t obj = interpret_expr(s->expr, &err);
         if (obj.type != _OBJECT_INVALID)
@@ -106,7 +110,7 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
 
 static object_t interpret_expr(const expr_t* expr, const char** out_err)
 {
-    object_t obj = {0};
+    object_t obj = { 0 };
     obj.type = _OBJECT_INVALID;
 
     if (!expr)
@@ -123,29 +127,34 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
 
     switch (expr->type)
     {
-    case EXPR_LITERAL: {
+    case EXPR_LITERAL:
+    {
         expr_literal_t* e = (expr_literal_t*)expr;
         obj.type = e->type;
 
         switch (obj.type)
         {
-        case OBJECT_STRING: {
+        case OBJECT_STRING:
+        {
             obj.val.str = malloc(sizeof(char) * (strlen(e->val.str) + 1));
             strcpy(obj.val.str, e->val.str);
         }
         break;
 
-        case OBJECT_BOOL: {
+        case OBJECT_BOOL:
+        {
             obj.val.boolean = e->val.boolean;
         }
         break;
 
-        case OBJECT_NUMBER: {
+        case OBJECT_NUMBER:
+        {
             obj.val.num = e->val.num;
         }
         break;
 
-        case OBJECT_NIL: {
+        case OBJECT_NIL:
+        {
             // TODO(omar): implement nil (everywhere)
         }
         break;
@@ -156,7 +165,8 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
     }
     break;
 
-    case EXPR_UNARY: {
+    case EXPR_UNARY:
+    {
         expr_unary_t* e = (expr_unary_t*)expr;
         object_t right = interpret_expr(e->right, &err);
         if (err)
@@ -166,7 +176,8 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
 
         switch (e->operator.type)
         {
-        case TOKEN_MINUS: {
+        case TOKEN_MINUS:
+        {
             if (right.type == OBJECT_NUMBER)
             {
                 obj.type = OBJECT_NUMBER;
@@ -180,7 +191,8 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         }
         break;
 
-        case TOKEN_BANG: {
+        case TOKEN_BANG:
+        {
             obj.type = OBJECT_BOOL;
             obj.val.boolean = !(object_is_truthy(&right));
         }
@@ -192,7 +204,8 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
     }
     break;
 
-    case EXPR_BINARY: {
+    case EXPR_BINARY:
+    {
         expr_binary_t* e = (expr_binary_t*)expr;
         object_t left = interpret_expr(e->left, NULL);
         object_t right = interpret_expr(e->right, NULL);
@@ -203,7 +216,8 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
 
         switch (e->operator.type)
         {
-        case TOKEN_STAR: {
+        case TOKEN_STAR:
+        {
             if ((left.type != right.type) || (left.type != OBJECT_NUMBER))
             {
                 err = "Operands must be numbers";
@@ -215,7 +229,8 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         }
         break;
 
-        case TOKEN_MINUS: {
+        case TOKEN_MINUS:
+        {
             if ((left.type != right.type) || (left.type != OBJECT_NUMBER))
             {
                 err = "Operands must be numbers";
@@ -227,7 +242,8 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         }
         break;
 
-        case TOKEN_SLASH: {
+        case TOKEN_SLASH:
+        {
             if ((left.type != right.type) || (left.type != OBJECT_NUMBER))
             {
                 err = "Operands must be numbers";
@@ -239,7 +255,8 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         }
         break;
 
-        case TOKEN_PLUS: {
+        case TOKEN_PLUS:
+        {
             if ((left.type == OBJECT_NUMBER) && (right.type == OBJECT_NUMBER))
             {
                 obj.type = OBJECT_NUMBER;
@@ -264,7 +281,8 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         }
         break;
 
-        case TOKEN_GREATER: {
+        case TOKEN_GREATER:
+        {
             if ((left.type != right.type) || (left.type != OBJECT_NUMBER))
             {
                 err = "Operands must be numbers";
@@ -276,7 +294,8 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         }
         break;
 
-        case TOKEN_LESS: {
+        case TOKEN_LESS:
+        {
             if ((left.type != right.type) || (left.type != OBJECT_NUMBER))
             {
                 err = "Operands must be numbers";
@@ -288,7 +307,8 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         }
         break;
 
-        case TOKEN_GREATER_EQUAL: {
+        case TOKEN_GREATER_EQUAL:
+        {
             if ((left.type != right.type) || (left.type != OBJECT_NUMBER))
             {
                 err = "Operands must be numbers";
@@ -300,7 +320,8 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         }
         break;
 
-        case TOKEN_LESS_EQUAL: {
+        case TOKEN_LESS_EQUAL:
+        {
             if ((left.type != right.type) || (left.type != OBJECT_NUMBER))
             {
                 err = "Operands must be numbers";
@@ -312,13 +333,15 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         }
         break;
 
-        case TOKEN_BANG_EQUAL: {
+        case TOKEN_BANG_EQUAL:
+        {
             obj.type = OBJECT_BOOL;
             obj.val.boolean = !object_is_equal(&left, &right);
         }
         break;
 
-        case TOKEN_EQUAL_EQUAL: {
+        case TOKEN_EQUAL_EQUAL:
+        {
             obj.type = OBJECT_BOOL;
             obj.val.boolean = object_is_equal(&left, &right);
         }
@@ -327,6 +350,11 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
 
         free_object(&left);
         free_object(&right);
+    }
+    break;
+
+    case EXPR_VAR:
+    {
     }
     break;
 
@@ -345,17 +373,20 @@ static bool object_is_truthy(const object_t* obj)
 {
     switch (obj->type)
     {
-    case OBJECT_BOOL: {
+    case OBJECT_BOOL:
+    {
         return (obj->val.boolean);
     }
     break;
 
-    case OBJECT_NIL: {
+    case OBJECT_NIL:
+    {
         return false;
     }
     break;
 
-    default: {
+    default:
+    {
         return true;
     }
     break;
@@ -371,18 +402,21 @@ static bool object_is_equal(const object_t* left, const object_t* right)
 
     switch (left->type)
     {
-    case OBJECT_STRING: {
+    case OBJECT_STRING:
+    {
         return (strcmp(left->val.str, right->val.str) == 0);
     }
     break;
 
-    case OBJECT_NIL: {
+    case OBJECT_NIL:
+    {
         return true;
     }
     break;
 
     // this will work for any object type where the value is encoded in val
-    default: {
+    default:
+    {
         return left->val.num == right->val.num;
     }
     break;

@@ -62,7 +62,7 @@ static token_list_t* tokens = NULL;
 
 static inline token_t get_token(bool advance)
 {
-    token_t tok = {0};
+    token_t tok = { 0 };
     tok.type = TOKEN_NONE;
 
     if (curr < tokens->len)
@@ -82,7 +82,7 @@ declaration_list_t parse(token_list_t* _tokens, bool* has_error)
     curr = 0;
     tokens = _tokens;
 
-    declaration_list_t list = {0};
+    declaration_list_t list = { 0 };
     while (curr < tokens->len)
     {
         declaration_t* stmt = parse_declaration();
@@ -105,13 +105,15 @@ void free_declaration(declaration_t* d)
 {
     switch (d->type)
     {
-    case DECLARATION_STMT: {
+    case DECLARATION_STMT:
+    {
         declaration_stmt_t* decl = (declaration_stmt_t*)d;
         free_stmt(decl->stmt);
     }
     break;
 
-    case DECLARATION_VAR: {
+    case DECLARATION_VAR:
+    {
         declaration_var_t* decl = (declaration_var_t*)d;
         free_expr(decl->expr);
     }
@@ -320,13 +322,15 @@ void free_stmt(stmt_t* stmt)
 
     switch (stmt->type)
     {
-    case STMT_EXPR: {
+    case STMT_EXPR:
+    {
         stmt_expr_t* s = (stmt_expr_t*)stmt;
         free_expr(s->expr);
     }
     break;
 
-    case STMT_PRINT: {
+    case STMT_PRINT:
+    {
         stmt_print_t* s = (stmt_print_t*)stmt;
         free_expr(s->expr);
     }
@@ -355,7 +359,8 @@ void free_expr(expr_t* expr)
 
     switch (expr->type)
     {
-    case EXPR_BINARY: {
+    case EXPR_BINARY:
+    {
         expr_binary_t* e = (expr_binary_t*)expr;
 
         free_expr(e->left);
@@ -363,23 +368,34 @@ void free_expr(expr_t* expr)
     }
     break;
 
-    case EXPR_GROUPING: {
+    case EXPR_GROUPING:
+    {
         expr_grouping_t* e = (expr_grouping_t*)expr;
 
         free_expr(e->inner);
     }
     break;
 
-    case EXPR_LITERAL: {
+    case EXPR_LITERAL:
+    {
         expr_literal_t* e = (expr_literal_t*)expr;
         (void)e;
     }
     break;
 
-    case EXPR_UNARY: {
+    case EXPR_UNARY:
+    {
         expr_unary_t* e = (expr_unary_t*)expr;
 
         free_expr(e->right);
+    }
+    break;
+
+    case EXPR_VAR:
+    {
+        expr_var_t* e = (expr_var_t*)expr;
+
+        (void)e;
     }
     break;
 
@@ -425,6 +441,14 @@ static inline expr_grouping_t* new_grouping_expr()
 {
     expr_grouping_t* expr = calloc(1, sizeof(expr_grouping_t));
     expr->e.type = EXPR_GROUPING;
+
+    return expr;
+}
+
+static inline expr_var_t* new_var_expr()
+{
+    expr_var_t* expr = calloc(1, sizeof(expr_var_t));
+    expr->e.type = EXPR_VAR;
 
     return expr;
 }
@@ -592,7 +616,8 @@ static expr_t* parse_primary()
 
     switch (tok.type)
     {
-    case TOKEN_FALSE: {
+    case TOKEN_FALSE:
+    {
         curr++;
 
         expr_literal_t* expr = new_literal_expr();
@@ -603,7 +628,8 @@ static expr_t* parse_primary()
     }
     break;
 
-    case TOKEN_TRUE: {
+    case TOKEN_TRUE:
+    {
         curr++;
 
         expr_literal_t* expr = new_literal_expr();
@@ -614,7 +640,8 @@ static expr_t* parse_primary()
     }
     break;
 
-    case TOKEN_NIL: {
+    case TOKEN_NIL:
+    {
         curr++;
 
         expr_literal_t* expr = new_literal_expr();
@@ -624,7 +651,8 @@ static expr_t* parse_primary()
     }
     break;
 
-    case TOKEN_STRING: {
+    case TOKEN_STRING:
+    {
         curr++;
 
         expr_literal_t* expr = new_literal_expr();
@@ -635,7 +663,8 @@ static expr_t* parse_primary()
     }
     break;
 
-    case TOKEN_NUMBER: {
+    case TOKEN_NUMBER:
+    {
         curr++;
 
         expr_literal_t* expr = new_literal_expr();
@@ -646,7 +675,8 @@ static expr_t* parse_primary()
     }
     break;
 
-    case TOKEN_LEFT_PAREN: {
+    case TOKEN_LEFT_PAREN:
+    {
         curr++;
 
         expr_t* inner = parse_expr();
@@ -665,8 +695,14 @@ static expr_t* parse_primary()
     }
     break;
 
-    case TOKEN_IDENTIFIER: {
-        assert(false && "IDENTIFIERS UNIMPLEMENTED");
+    case TOKEN_IDENTIFIER:
+    {
+        curr++;
+
+        expr_var_t* expr = new_var_expr();
+        expr->name = tok;
+
+        return (expr_t*)expr;
     }
     break;
     }
@@ -684,7 +720,8 @@ static char* stmt_to_str(const stmt_t* stmt)
 
     switch (stmt->type)
     {
-    case STMT_EXPR: {
+    case STMT_EXPR:
+    {
         stmt_expr_t* s = (stmt_expr_t*)stmt;
         const char* prefix = "EXPRESSION STATEMENT: ";
 
@@ -699,7 +736,8 @@ static char* stmt_to_str(const stmt_t* stmt)
     }
     break;
 
-    case STMT_PRINT: {
+    case STMT_PRINT:
+    {
         stmt_print_t* s = (stmt_print_t*)stmt;
         const char* prefix = "PRINT STATEMENT: ";
 
@@ -727,13 +765,15 @@ static char* declaration_to_str(const declaration_t* d)
 
     switch (d->type)
     {
-    case DECLARATION_STMT: {
+    case DECLARATION_STMT:
+    {
         const declaration_stmt_t* decl = (declaration_stmt_t*)d;
         return stmt_to_str(decl->stmt);
     }
     break;
 
-    case DECLARATION_VAR: {
+    case DECLARATION_VAR:
+    {
         const declaration_var_t* decl = (declaration_var_t*)d;
         const char* format;
         size_t str_size;
@@ -742,8 +782,7 @@ static char* declaration_to_str(const declaration_t* d)
         if (expr_str)
         {
             format = "%s declared to be %s";
-            str_size = sizeof(char) * (strlen(expr_str) + strlen(format) +
-                                       strlen(decl->name.lexeme) + 1);
+            str_size = sizeof(char) * (strlen(expr_str) + strlen(format) + strlen(decl->name.lexeme) + 1);
             char* str = malloc(str_size);
             snprintf(str, str_size, format, decl->name.lexeme, expr_str);
 
@@ -753,8 +792,7 @@ static char* declaration_to_str(const declaration_t* d)
         else
         {
             format = "%s declared to be nil";
-            str_size =
-                sizeof(char) * (strlen(format) + strlen(decl->name.lexeme) + 1);
+            str_size = sizeof(char) * (strlen(format) + strlen(decl->name.lexeme) + 1);
             char* str = malloc(str_size);
             snprintf(str, str_size, format, decl->name.lexeme);
 
@@ -776,15 +814,13 @@ static char* expr_to_str(const expr_t* expr)
 
     switch (expr->type)
     {
-    case EXPR_BINARY: {
+    case EXPR_BINARY:
+    {
         const expr_binary_t* e = (expr_binary_t*)expr;
         char* left = expr_to_str(e->left);
         char* right = expr_to_str(e->right);
 
-        size_t str_size =
-            sizeof(char) *
-            (strlen(left) + strlen(right) + strlen(e->operator.lexeme) + 1 +
-             4); // accounting for null terminator and spaces
+        size_t str_size = sizeof(char) * (strlen(left) + strlen(right) + strlen(e->operator.lexeme) + 1 + 4); // accounting for null terminator and spaces
         char* str = malloc(str_size);
         snprintf(str, str_size, "(%s %s %s)", e->operator.lexeme, left, right);
 
@@ -795,12 +831,12 @@ static char* expr_to_str(const expr_t* expr)
     }
     break;
 
-    case EXPR_UNARY: {
+    case EXPR_UNARY:
+    {
         const expr_unary_t* e = (expr_unary_t*)expr;
         char* right = expr_to_str(e->right);
 
-        size_t str_size =
-            sizeof(char) + (strlen(right) + strlen(e->operator.lexeme) + 1);
+        size_t str_size = sizeof(char) + (strlen(right) + strlen(e->operator.lexeme) + 1);
         char* str = malloc(str_size);
         snprintf(str, str_size, "%s%s", e->operator.lexeme, right);
 
@@ -810,7 +846,8 @@ static char* expr_to_str(const expr_t* expr)
     }
     break;
 
-    case EXPR_GROUPING: {
+    case EXPR_GROUPING:
+    {
         const expr_grouping_t* e = (expr_grouping_t*)expr;
         char* inner = expr_to_str(e->inner);
 
@@ -824,13 +861,15 @@ static char* expr_to_str(const expr_t* expr)
     }
     break;
 
-    case EXPR_LITERAL: {
+    case EXPR_LITERAL:
+    {
         const expr_literal_t* e = (expr_literal_t*)expr;
 
         char* str = NULL;
         switch (e->type)
         {
-        case OBJECT_BOOL: {
+        case OBJECT_BOOL:
+        {
             const char* bool_str = "false";
             if (e->val.boolean)
             {
@@ -842,7 +881,8 @@ static char* expr_to_str(const expr_t* expr)
         }
         break;
 
-        case OBJECT_NUMBER: {
+        case OBJECT_NUMBER:
+        {
             int str_size = snprintf(NULL, 0, "%f", e->val.num) + 1;
 
             str = malloc(str_size);
@@ -851,18 +891,32 @@ static char* expr_to_str(const expr_t* expr)
         }
         break;
 
-        case OBJECT_STRING: {
+        case OBJECT_STRING:
+        {
             str = malloc(strlen(e->val.str) + 1);
             strcpy(str, e->val.str);
         }
         break;
 
-        case OBJECT_NIL: {
+        case OBJECT_NIL:
+        {
         }
         break;
         }
 
         assert(str);
+        return str;
+    }
+    break;
+
+    case EXPR_VAR:
+    {
+        const expr_var_t* e = (expr_var_t*)expr;
+
+        size_t str_size = sizeof(char) * (strlen(e->name.lexeme) + 1);
+        char* str = malloc(str_size);
+        snprintf(str, str_size, "%s", e->name.lexeme);
+
         return str;
     }
     break;

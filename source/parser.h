@@ -16,7 +16,8 @@ typedef enum
     EXPR_BINARY,
     EXPR_GROUPING,
     EXPR_LITERAL,
-    EXPR_UNARY
+    EXPR_UNARY,
+    EXPR_VAR
 } expr_type_t;
 
 typedef struct
@@ -49,7 +50,8 @@ typedef struct
     // and probably shouldn't share a type enum
     // but we don't care for now
     object_type_t type;
-    union {
+    union
+    {
         float num;
         char* str;
         bool boolean;
@@ -63,9 +65,14 @@ typedef struct
     expr_t* inner;
 } expr_grouping_t;
 
+typedef struct
+{
+    expr_t e;
+
+    token_t name;
+} expr_var_t;
+
 // STATEMENTS
-
-
 
 typedef enum
 {
