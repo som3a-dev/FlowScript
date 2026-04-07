@@ -21,6 +21,7 @@ set(SOURCES
   source/parser.c
   source/interpreter.c
   source/object.c
+  source/environment.c
 )
 
 add_compile_definitions(USE_NEW_CACHE _CRT_SECURE_NO_WARNINGS)
