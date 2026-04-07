@@ -41,6 +41,11 @@ void print_object(const object_t *obj)
             printf("nil\n");
         } break;
 
+        case _OBJECT_INVALID:
+        {
+            printf("(INVALID OBJECT)\n");
+        } break;
+
         default: assert(false);
     }
 }
