@@ -62,6 +62,13 @@ void expr_free(expr_t* expr)
     }
     break;
 
+    case EXPR_ASSIGN:
+    {
+        expr_assign_t* e = (expr_assign_t*)expr;
+        expr_free(e->val);
+    }
+    break;
+
     default:
         assert(false);
     }

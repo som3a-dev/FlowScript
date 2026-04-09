@@ -20,6 +20,8 @@ static stmt_t* parse_stmt();
 static expr_t* parse_expr();
 
 static expr_t* parse_series();
+
+static expr_t* parse_assignment();
 static expr_t* parse_equality();
 static expr_t* parse_comparison();
 static expr_t* parse_term();
@@ -236,6 +238,14 @@ static expr_t* parse_expr()
     return parse_series();
 }
 
+static inline expr_assign_t* new_assign_expr()
+{
+    expr_assign_t* expr = calloc(1, sizeof(expr_assign_t));
+    expr->e.type = EXPR_ASSIGN;
+
+    return expr;
+}
+
 static inline expr_binary_t* new_binary_expr()
 {
     expr_binary_t* expr = calloc(1, sizeof(expr_binary_t));
@@ -278,7 +288,7 @@ static inline expr_var_t* new_var_expr()
 
 static expr_t* parse_series()
 {
-    expr_t* expr = parse_equality();
+    expr_t* expr = parse_assignment();
     if (expr == NULL)
     {
         return NULL;
@@ -289,7 +299,7 @@ static expr_t* parse_series()
     {
         curr++;
 
-        expr_t* right = parse_equality();
+        expr_t* right = parse_assignment();
 
         expr_binary_t* new_expr = new_binary_expr();
 
@@ -303,6 +313,45 @@ static expr_t* parse_series()
     }
 
     return (expr_t*)expr;
+}
+
+static expr_t* parse_assignment()
+{
+    expr_t* expr = parse_equality();
+    if (expr == NULL)
+    {
+        return NULL;
+    }
+
+    token_t tok = get_token(false);
+    if (tok.type == TOKEN_EQUAL)
+    {
+        curr++;
+
+        if (expr->type == EXPR_VAR)
+        {
+            expr_var_t* var = (expr_var_t*)expr;
+            token_t name = var->name;
+
+            expr_t* val = parse_assignment();
+
+            expr_assign_t* assign = new_assign_expr();
+            assign->name = name;
+            assign->val = val;
+
+            expr_free(expr);
+            expr = (expr_t*)assign;
+        }
+        else
+        {
+            printf("PARSER ERROR: Invalid assignment target\n");
+
+            expr_free(expr);
+            return NULL;
+        }
+    }
+
+    return expr;
 }
 
 static expr_t* parse_equality()

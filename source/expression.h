@@ -13,6 +13,7 @@
 
 typedef enum
 {
+    EXPR_ASSIGN,
     EXPR_BINARY,
     EXPR_GROUPING,
     EXPR_LITERAL,
@@ -24,6 +25,14 @@ typedef struct
 {
     expr_type_t type;
 } expr_t;
+
+typedef struct
+{
+    expr_t e;
+
+    token_t name;
+    expr_t* val;
+} expr_assign_t;
 
 typedef struct
 {
