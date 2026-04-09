@@ -149,6 +149,23 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
 
     switch (expr->type)
     {
+    case EXPR_ASSIGN:
+    {
+        expr_assign_t* e = (expr_assign_t*)expr;
+
+        object_t val = interpret_expr(e->val, &err);
+        if (err)
+        {
+            *out_err = err;
+        }
+        else
+        {
+            environment_assign(&env, e->name.lexeme, &val);
+            obj = val;
+        }
+    }
+    break;
+
     case EXPR_LITERAL:
     {
         expr_literal_t* e = (expr_literal_t*)expr;

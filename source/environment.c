@@ -104,6 +104,30 @@ define_entry:
     e->val = object_copy(val);
 }
 
+void environment_assign(environment_t* env, const char* name, const object_t* val)
+{
+    uint32_t index = hash(name) % env->vals_count;
+
+    environment_entry_t* e = env->vals + index;
+    if (strcmp(e->name, name) != 0)
+    {
+        for (int i = index + 1; i < env->vals_count; i++)
+        {
+            e++;
+            if (strcmp(e->name, name) == 0)
+            {
+                goto assign_entry;
+            }
+        }
+
+        return;
+    }
+
+assign_entry:
+    object_free(&(e->val));
+    e->val = object_copy(val);
+}
+
 static void environment_resize(environment_t* env, int new_size)
 {
     if (new_size < 1)
