@@ -16,8 +16,6 @@
 static void interpret_declaration(const declaration_t* d, const char** out_err);
 static void interpret_stmt(const stmt_t* stmt, const char** out_err);
 static object_t interpret_expr(const expr_t* expr, const char** out_err);
-static bool object_is_truthy(const object_t* obj);
-static bool object_is_equal(const object_t* left, const object_t* right);
 
 static environment_t env = { 0 };
 
@@ -396,58 +394,4 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         *out_err = err;
     }
     return obj;
-}
-
-static bool object_is_truthy(const object_t* obj)
-{
-    switch (obj->type)
-    {
-    case OBJECT_BOOL:
-    {
-        return (obj->val.boolean);
-    }
-    break;
-
-    case OBJECT_NIL:
-    {
-        return false;
-    }
-    break;
-
-    default:
-    {
-        return true;
-    }
-    break;
-    }
-}
-
-static bool object_is_equal(const object_t* left, const object_t* right)
-{
-    if (left->type != right->type)
-    {
-        return false;
-    }
-
-    switch (left->type)
-    {
-    case OBJECT_STRING:
-    {
-        return (strcmp(left->val.str, right->val.str) == 0);
-    }
-    break;
-
-    case OBJECT_NIL:
-    {
-        return true;
-    }
-    break;
-
-    // this will work for any object type where the value is encoded in val
-    default:
-    {
-        return left->val.num == right->val.num;
-    }
-    break;
-    }
 }

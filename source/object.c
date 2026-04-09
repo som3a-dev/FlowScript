@@ -77,3 +77,57 @@ object_t object_copy(const object_t* obj)
 
     return cpy;
 }
+
+bool object_is_truthy(const object_t* obj)
+{
+    switch (obj->type)
+    {
+    case OBJECT_BOOL:
+    {
+        return (obj->val.boolean);
+    }
+    break;
+
+    case OBJECT_NIL:
+    {
+        return false;
+    }
+    break;
+
+    default:
+    {
+        return true;
+    }
+    break;
+    }
+}
+
+bool object_is_equal(const object_t* left, const object_t* right)
+{
+    if (left->type != right->type)
+    {
+        return false;
+    }
+
+    switch (left->type)
+    {
+    case OBJECT_STRING:
+    {
+        return (strcmp(left->val.str, right->val.str) == 0);
+    }
+    break;
+
+    case OBJECT_NIL:
+    {
+        return true;
+    }
+    break;
+
+    // this will work for any object type where the value is encoded in val
+    default:
+    {
+        return left->val.num == right->val.num;
+    }
+    break;
+    }
+}

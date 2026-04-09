@@ -36,4 +36,7 @@ void object_print(const object_t* obj);
 // creates a seperate deep copy of an object
 object_t object_copy(const object_t* obj);
 
+bool object_is_truthy(const object_t* obj);
+bool object_is_equal(const object_t* left, const object_t* right);
+
 #endif
