@@ -57,6 +57,7 @@ int main(void)
     init_crtdbg();
 #endif
 
+    init_interpreter();
     while (running)
     {
         printf("> ");
@@ -81,8 +82,6 @@ int main(void)
             goto done;
         }
 
-        declaration_list_print(&stmts);
-
         interpret(&stmts);
 
     done:
@@ -92,9 +91,7 @@ int main(void)
         buf[0] = '\0'; // clear the buffer
     }
 
-#ifdef _DEBUG
-    dump_crtdbg();
-#endif
+    destroy_interpreter();
 
     return 0;
 }
@@ -169,7 +166,7 @@ static void clear_stdout()
     GetConsoleScreenBufferInfo(console_handle, &console_buf_info);
 
     DWORD console_size = console_buf_info.dwSize.X * console_buf_info.dwSize.Y;
-    COORD cursor = {0, 0};
+    COORD cursor = { 0, 0 };
     DWORD chars_written;
     FillConsoleOutputCharacter(
         console_handle, (TCHAR)' ', console_size, cursor, &chars_written);

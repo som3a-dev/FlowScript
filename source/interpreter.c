@@ -1,4 +1,5 @@
 #include "interpreter.h"
+#include "environment.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -11,19 +12,21 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err);
 static bool object_is_truthy(const object_t* obj);
 static bool object_is_equal(const object_t* left, const object_t* right);
 
+static environment_t env = { 0 };
+
+void init_interpreter()
+{
+    environment_init(&env);
+}
+
+void destroy_interpreter()
+{
+    environment_destroy(&env);
+}
+
 void interpret(const declaration_list_t* stmts)
 {
     const char* err = NULL;
-    /*    object_t obj = interpret_expr(expr, &err);
-        if (err) {
-            printf("RUNTIME ERROR: %s\n", err);
-        }
-        else {
-            print_object(&obj);
-        }
-
-        free_object(&obj); */
-
     for (int i = 0; i < stmts->len; i++)
     {
         interpret_declaration(stmts->stmts[i], &err);
@@ -54,7 +57,21 @@ static void interpret_declaration(const declaration_t* d, const char** out_err)
     case DECLARATION_VAR:
     {
         const declaration_var_t* decl = (declaration_var_t*)d;
-        (decl);
+        object_t val = { 0 };
+        val.type = OBJECT_NIL;
+        if (decl->expr)
+        {
+            val = interpret_expr(decl->expr, &err);
+            if (err)
+            {
+                // TODO(omar): why does an invalid object not give us an error
+                free_object(&val);
+                return;
+            }
+        }
+
+        environment_define(&env, decl->name.lexeme, &val);
+        free_object(&val);
     }
     break;
 
@@ -355,11 +372,16 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
 
     case EXPR_VAR:
     {
+        expr_var_t* e = (expr_var_t*)expr;
+        obj = environment_get(&env, e->name.lexeme);
     }
     break;
 
     default:
+    {
         assert(false);
+    }
+    break;
     }
 
     if (out_err)
