@@ -15,7 +15,8 @@ typedef enum
 typedef struct
 {
     object_type_t type;
-    union {
+    union
+    {
         float num;
         char* str;
         bool boolean;
@@ -23,7 +24,9 @@ typedef struct
 } object_t;
 
 void free_object(object_t* obj);
-void print_object(const object_t *obj);
+void print_object(const object_t* obj);
 
+// creates a seperate deep copy of an object
+object_t object_copy(const object_t* obj);
 
 #endif
