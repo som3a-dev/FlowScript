@@ -16,13 +16,14 @@ typedef struct
     object_t val;
 } environment_entry_t;
 
-typedef struct
+typedef struct _environment_t
 {
+    struct _environment_t* enclosing;
     environment_entry_t* vals;
     int vals_count;
 } environment_t;
 
-void environment_init(environment_t* env);
+void environment_init(environment_t* env, environment_t* enclosing);
 void environment_destroy(environment_t* env);
 
 object_t environment_get(const environment_t* env, const char* name);

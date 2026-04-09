@@ -17,10 +17,11 @@ static void environment_resize(environment_t* env, int new_size);
 
 static uint32_t hash(const char* str);
 
-void environment_init(environment_t* env)
+void environment_init(environment_t* env, environment_t* enclosing)
 {
     env->vals = NULL;
     env->vals_count = 0;
+    env->enclosing = enclosing;
 
     environment_resize(env, ENVIRONMENT_DEFAULT_SIZE);
 }
@@ -49,7 +50,7 @@ object_t environment_get(const environment_t* env, const char* name)
     const environment_entry_t* e = env->vals + index;
     if (e->name == NULL)
     {
-        goto invalid_object_ret;
+        goto not_found;
     }
 
     if (strcmp(e->name, name) == 0)
@@ -68,7 +69,12 @@ object_t environment_get(const environment_t* env, const char* name)
         }
     }
 
-invalid_object_ret:
+not_found:
+    if (env->enclosing)
+    {
+        return environment_get(env->enclosing, name);
+    }
+
     object_t obj = { 0 };
     obj.type = _OBJECT_INVALID;
     return obj;
@@ -120,6 +126,10 @@ void environment_assign(environment_t* env, const char* name, const object_t* va
             }
         }
 
+        if (env->enclosing)
+        {
+            environment_assign(env->enclosing, name, val);
+        }
         return;
     }
 
