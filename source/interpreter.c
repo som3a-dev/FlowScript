@@ -21,7 +21,7 @@ static environment_t env = { 0 };
 
 void init_interpreter()
 {
-    environment_init(&env);
+    environment_init(&env, NULL);
 }
 
 void destroy_interpreter()
@@ -77,6 +77,28 @@ static void interpret_declaration(const declaration_t* d, const char** out_err)
 
         environment_define(&env, decl->name.lexeme, &val);
         object_free(&val);
+    }
+    break;
+
+    case DECLARATION_BLOCK:
+    {
+        const declaration_block_t* decl = (declaration_block_t*)d;
+        environment_t prev_env = env;
+        environment_init(&env, &prev_env);
+
+        for (int i = 0; i < decl->stmts.len; i++)
+        {
+            declaration_t* stmt = decl->stmts.stmts[i];
+            interpret_declaration(stmt, &err);
+            if (err)
+            {
+                *out_err = err;
+                return;
+            }
+        }
+
+        environment_destroy(&env);
+        env = prev_env;
     }
     break;
 
