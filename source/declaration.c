@@ -29,6 +29,13 @@ void declaration_free(declaration_t* d)
         expr_free(decl->expr);
     }
     break;
+
+    case DECLARATION_BLOCK:
+    {
+        declaration_block_t* decl = (declaration_block_t*)d;
+        declaration_list_free(&(decl->stmts));
+    }
+    break;
     }
 
     free(d);

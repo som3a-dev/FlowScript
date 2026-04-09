@@ -13,6 +13,7 @@
 typedef enum
 {
     DECLARATION_VAR, // variable declaration
+    DECLARATION_BLOCK, // Block/Scope
     DECLARATION_STMT // just a normal statement that doesn't declare anything
 } declaration_type_t;
 
@@ -26,6 +27,16 @@ typedef struct
     declaration_type_t type;
 } declaration_t;
 
+/*
+ * This is a list of declaration statements (like token_list_t), not a list
+ * declaration statement
+ */
+typedef struct
+{
+    declaration_t** stmts;
+    int len;
+} declaration_list_t;
+
 typedef struct
 {
     declaration_t d;
@@ -36,18 +47,14 @@ typedef struct
 typedef struct
 {
     declaration_t d;
-    stmt_t* stmt;
-} declaration_stmt_t;
+    declaration_list_t stmts;
+} declaration_block_t;
 
-/*
- * This is a list of declaration statements (like token_list_t), not a list
- * declaration statement
- */
 typedef struct
 {
-    declaration_t** stmts;
-    int len;
-} declaration_list_t;
+    declaration_t d;
+    stmt_t* stmt;
+} declaration_stmt_t;
 
 void declaration_free(declaration_t* d);
 void declaration_print(const declaration_t* d);
