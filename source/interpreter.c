@@ -112,7 +112,6 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
         if (obj.type != _OBJECT_INVALID)
         {
             object_print(&obj);
-            object_free(&obj);
         }
     }
     break;
