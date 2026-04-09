@@ -102,6 +102,7 @@ declaration_list_t parse(token_list_t* _tokens, bool* has_error)
 }
 
 static declaration_var_t* parse_var_declaration();
+static declaration_block_t* parse_block_declaration();
 static declaration_stmt_t* parse_stmt_declaration();
 
 static declaration_t* parse_declaration()
@@ -113,8 +114,42 @@ static declaration_t* parse_declaration()
 
         return (declaration_t*)(parse_var_declaration());
     }
+    else if (tok.type == TOKEN_LEFT_BRACE)
+    {
+        curr++;
+
+        return (declaration_t*)(parse_block_declaration());
+    }
 
     return (declaration_t*)(parse_stmt_declaration());
+}
+
+static declaration_block_t* parse_block_declaration()
+{
+    declaration_block_t* block = malloc(sizeof(declaration_block_t));
+    block->d.type = DECLARATION_BLOCK;
+    block->stmts = (declaration_list_t) { 0 };
+
+    token_t tok = get_token(false);
+    while (tok.type != TOKEN_RIGHT_BRACE && tok.type != TOKEN_NONE)
+    {
+        declaration_list_push(&(block->stmts), parse_declaration());
+        tok = get_token(false);
+    }
+
+    if (tok.type != TOKEN_RIGHT_BRACE)
+    {
+        printf("PARSER ERROR: Expected '}' at the end of the block.\n");
+        declaration_free((declaration_t*)block);
+
+        return NULL;
+    }
+    else
+    {
+        curr++;
+    }
+
+    return block;
 }
 
 static declaration_var_t* parse_var_declaration()
@@ -122,7 +157,7 @@ static declaration_var_t* parse_var_declaration()
     token_t name = get_token(true);
     if (name.type != TOKEN_IDENTIFIER)
     {
-        printf("Expected variable name.\n");
+        printf("PARSER ERROR: Expected variable name.\n");
         return NULL;
     }
 
@@ -142,7 +177,7 @@ static declaration_var_t* parse_var_declaration()
     tok = get_token(false);
     if (tok.type != TOKEN_SEMICOLON)
     {
-        printf("Expected ';' after variable declaration.\n");
+        printf("PARSER ERROR: Expected ';' after variable declaration.\n");
         expr_free(expr);
         return NULL;
     }
