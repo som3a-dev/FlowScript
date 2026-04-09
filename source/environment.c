@@ -1,3 +1,10 @@
+/*
+ * File: environment.c
+ * Created on Sat Apr 04 2026
+ *
+ * Copyright (c) 2026 Omar Eltayeb
+ */
+
 #include "environment.h"
 
 #include <stdint.h>
@@ -25,7 +32,7 @@ void environment_destroy(environment_t* env)
         for (int i = 0; i < env->vals_count; i++)
         {
             free(env->vals[i].name);
-            free_object(&(env->vals[i].val));
+            object_free(&(env->vals[i].val));
         }
 
         free(env->vals);

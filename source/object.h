@@ -1,3 +1,10 @@
+/*
+ * File: object.h
+ * Created on Wed Mar 25 2026
+ *
+ * Copyright (c) 2026 Omar Eltayeb
+ */
+
 #ifndef _OBJECT_H
 #define _OBJECT_H
 
@@ -23,8 +30,8 @@ typedef struct
     } val;
 } object_t;
 
-void free_object(object_t* obj);
-void print_object(const object_t* obj);
+void object_free(object_t* obj);
+void object_print(const object_t* obj);
 
 // creates a seperate deep copy of an object
 object_t object_copy(const object_t* obj);

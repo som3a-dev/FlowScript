@@ -1,3 +1,10 @@
+/*
+ * File: object.c
+ * Created on Wed Mar 25 2026
+ *
+ * Copyright (c) 2026 Omar Eltayeb
+ */
+
 #include "object.h"
 
 #include <assert.h>
@@ -5,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void free_object(object_t* obj)
+void object_free(object_t* obj)
 {
     if (obj->type == OBJECT_STRING)
     {
@@ -13,7 +20,7 @@ void free_object(object_t* obj)
     }
 }
 
-void print_object(const object_t* obj)
+void object_print(const object_t* obj)
 {
     switch (obj->type)
     {

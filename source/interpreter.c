@@ -1,3 +1,10 @@
+/*
+ * File: interpreter.c
+ * Created on Tue Mar 24 2026
+ *
+ * Copyright (c) 2026 Omar Eltayeb
+ */
+
 #include "interpreter.h"
 #include "environment.h"
 
@@ -65,13 +72,13 @@ static void interpret_declaration(const declaration_t* d, const char** out_err)
             if (err)
             {
                 // TODO(omar): why does an invalid object not give us an error
-                free_object(&val);
+                object_free(&val);
                 return;
             }
         }
 
         environment_define(&env, decl->name.lexeme, &val);
-        free_object(&val);
+        object_free(&val);
     }
     break;
 
@@ -106,8 +113,8 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
         object_t obj = interpret_expr(s->expr, &err);
         if (obj.type != _OBJECT_INVALID)
         {
-            print_object(&obj);
-            free_object(&obj);
+            object_print(&obj);
+            object_free(&obj);
         }
     }
     break;
@@ -118,7 +125,7 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
         object_t obj = interpret_expr(s->expr, &err);
         if (obj.type != _OBJECT_INVALID)
         {
-            free_object(&obj);
+            object_free(&obj);
         }
     }
     break;
@@ -365,8 +372,8 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         break;
         }
 
-        free_object(&left);
-        free_object(&right);
+        object_free(&left);
+        object_free(&right);
     }
     break;
 

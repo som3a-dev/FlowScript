@@ -1,3 +1,10 @@
+/*
+ * File: environment.h
+ * Created on Sat Apr 04 2026
+ *
+ * Copyright (c) 2026 Omar Eltayeb
+ */
+
 #ifndef _ENVIRONMENT_H
 #define _ENVIRONMENT_H
 
