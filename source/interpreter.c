@@ -129,6 +129,37 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
         env = prev_env;
     }
     break;
+
+    case STMT_IF:
+    {
+        const stmt_if_t* s = (stmt_if_t*)stmt;
+        object_t condition = interpret_expr(s->condition, &err);
+        if (err)
+        {
+            *out_err = err;
+            return;
+        }
+
+        if (object_is_truthy(&condition))
+        {
+            interpret_stmt(s->then_branch, &err);
+            if (err)
+            {
+                *out_err = err;
+                return;
+            }
+        }
+        else if (s->else_branch)
+        {
+            interpret_stmt(s->else_branch, &err);
+            if (err)
+            {
+                *out_err = err;
+                return;
+            }
+        }
+    }
+    break;
     }
 }
 
