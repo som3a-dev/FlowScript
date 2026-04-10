@@ -192,6 +192,7 @@ static stmt_var_t* parse_var_declaration()
 
 static stmt_print_t* parse_stmt_print();
 static stmt_expr_t* parse_stmt_expr();
+static stmt_if_t* parse_stmt_if();
 
 static stmt_t* parse_stmt()
 {
@@ -202,10 +203,54 @@ static stmt_t* parse_stmt()
 
         return (stmt_t*)(parse_stmt_print());
     }
+    else if (tok.type == TOKEN_IF)
+    {
+        curr++;
+        return (stmt_t*)(parse_stmt_if());
+    }
 
     return (stmt_t*)(parse_stmt_expr());
 }
 
+static stmt_if_t* parse_stmt_if()
+{
+    token_t tok = get_token(true);
+    if (tok.type != TOKEN_LEFT_PAREN)
+    {
+        printf("PARSER ERROR: Expected '(' after 'if'.\n");
+        return NULL;
+    }
+
+    expr_t* condition = parse_expr();
+    if (!condition)
+    {
+        return NULL;
+    }
+
+    tok = get_token(true);
+    if (tok.type != TOKEN_RIGHT_PAREN)
+    {
+        printf("PARSER ERROR: Expected ')' after 'if'.\n");
+        return NULL;
+    }
+
+    stmt_t* then_branch = parse_stmt();
+    stmt_t* else_branch = NULL;
+
+    tok = get_token(false);
+    if (tok.type == TOKEN_ELSE)
+    {
+        curr++;
+        else_branch = parse_stmt();
+    }
+
+    stmt_if_t* stmt = malloc(sizeof(stmt_if_t));
+    stmt->s.type = STMT_IF;
+    stmt->then_branch = then_branch;
+    stmt->else_branch = else_branch;
+    stmt->condition = condition;
+
+    return stmt;
 }
 
 static stmt_print_t* parse_stmt_print()

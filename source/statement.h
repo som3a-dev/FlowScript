@@ -14,6 +14,7 @@ typedef enum
 {
     STMT_EXPR,
     STMT_PRINT,
+    STMT_IF,
     STMT_VAR, // variable declaration
     STMT_BLOCK // Block/Scope
 } stmt_type_t;
@@ -57,6 +58,15 @@ typedef struct
     stmt_t s;
     stmt_list_t stmts;
 } stmt_block_t;
+
+typedef struct
+{
+    stmt_t s;
+
+    expr_t* condition;
+    stmt_t* then_branch;
+    stmt_t* else_branch;
+} stmt_if_t;
 
 void stmt_free(stmt_t* stmt);
 void stmt_print(const stmt_t* stmt);

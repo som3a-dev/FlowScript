@@ -50,6 +50,15 @@ void stmt_free(stmt_t* stmt)
     }
     break;
 
+    case STMT_IF:
+    {
+        stmt_if_t* s = (stmt_if_t*)stmt;
+        expr_free(s->condition);
+        stmt_free(s->then_branch);
+        stmt_free(s->else_branch);
+    }
+    break;
+
     default:
         assert(false);
     }
