@@ -36,6 +36,20 @@ void stmt_free(stmt_t* stmt)
     }
     break;
 
+    case STMT_VAR:
+    {
+        stmt_var_t* s = (stmt_var_t*)stmt;
+        expr_free(s->expr);
+    }
+    break;
+
+    case STMT_BLOCK:
+    {
+        stmt_block_t* s = (stmt_block_t*)stmt;
+        stmt_list_free(&(s->stmts));
+    }
+    break;
+
     default:
         assert(false);
     }
@@ -93,4 +107,50 @@ char* stmt_to_str(const stmt_t* stmt)
     }
 
     return NULL;
+}
+
+void stmt_list_push(stmt_list_t* list, stmt_t* stmt)
+{
+    assert(list);
+    if (!stmt)
+    {
+        return;
+    }
+
+    list->len++;
+
+    if (list->stmts)
+    {
+        list->stmts = realloc(list->stmts, sizeof(stmt_t*) * list->len);
+    }
+    else
+    {
+        list->stmts = malloc(sizeof(stmt_t*) * list->len);
+    }
+
+    list->stmts[list->len - 1] = stmt;
+}
+
+void stmt_list_print(const stmt_list_t* list)
+{
+    assert(list);
+
+    for (int i = 0; i < list->len; i++)
+    {
+        char* str = stmt_to_str(list->stmts[i]);
+        printf("%s\n", str);
+        free(str);
+    }
+}
+
+void stmt_list_free(stmt_list_t* list)
+{
+    assert(list);
+
+    for (int i = 0; i < list->len; i++)
+    {
+        stmt_free(list->stmts[i]);
+    }
+
+    free(list->stmts);
 }

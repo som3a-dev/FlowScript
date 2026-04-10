@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void interpret_declaration(const declaration_t* d, const char** out_err);
+static void interpret_declaration(const stmt_t* d, const char** out_err);
 static void interpret_stmt(const stmt_t* stmt, const char** out_err);
 static object_t interpret_expr(const expr_t* expr, const char** out_err);
 
@@ -29,85 +29,17 @@ void destroy_interpreter()
     environment_destroy(&env);
 }
 
-void interpret(const declaration_list_t* stmts)
+void interpret(const stmt_list_t* stmts)
 {
     const char* err = NULL;
     for (int i = 0; i < stmts->len; i++)
     {
-        interpret_declaration(stmts->stmts[i], &err);
+        interpret_stmt(stmts->stmts[i], &err);
         if (err)
         {
             printf("RUNTIME ERROR: %s\n", err);
             break;
         }
-    }
-}
-
-static void interpret_declaration(const declaration_t* d, const char** out_err)
-{
-    if (!d)
-    {
-        if (out_err)
-        {
-            *out_err = "Invalid Statement";
-        }
-
-        return;
-    }
-
-    const char* err = NULL;
-
-    switch (d->type)
-    {
-    case DECLARATION_VAR:
-    {
-        const declaration_var_t* decl = (declaration_var_t*)d;
-        object_t val = { 0 };
-        val.type = OBJECT_NIL;
-        if (decl->expr)
-        {
-            val = interpret_expr(decl->expr, &err);
-            if (err)
-            {
-                // TODO(omar): why does an invalid object not give us an error
-                object_free(&val);
-                return;
-            }
-        }
-
-        environment_define(&env, decl->name.lexeme, &val);
-        object_free(&val);
-    }
-    break;
-
-    case DECLARATION_BLOCK:
-    {
-        const declaration_block_t* decl = (declaration_block_t*)d;
-        environment_t prev_env = env;
-        environment_init(&env, &prev_env);
-
-        for (int i = 0; i < decl->stmts.len; i++)
-        {
-            declaration_t* stmt = decl->stmts.stmts[i];
-            interpret_declaration(stmt, &err);
-            if (err)
-            {
-                *out_err = err;
-                return;
-            }
-        }
-
-        environment_destroy(&env);
-        env = prev_env;
-    }
-    break;
-
-    case DECLARATION_STMT:
-    {
-        const declaration_stmt_t* decl = (declaration_stmt_t*)d;
-        interpret_stmt(decl->stmt, &err);
-    }
-    break;
     }
 }
 
@@ -146,6 +78,49 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
         {
             object_free(&obj);
         }
+    }
+    break;
+
+    case STMT_VAR:
+    {
+        const stmt_var_t* decl = (stmt_var_t*)stmt;
+        object_t val = { 0 };
+        val.type = OBJECT_NIL;
+        if (decl->expr)
+        {
+            val = interpret_expr(decl->expr, &err);
+            if (err)
+            {
+                // TODO(omar): why does an invalid object not give us an error
+                object_free(&val);
+                return;
+            }
+        }
+
+        environment_define(&env, decl->name.lexeme, &val);
+        object_free(&val);
+    }
+    break;
+
+    case STMT_BLOCK:
+    {
+        const stmt_block_t* block = (stmt_block_t*)stmt;
+        environment_t prev_env = env;
+        environment_init(&env, &prev_env);
+
+        for (int i = 0; i < block->stmts.len; i++)
+        {
+            stmt_t* local_stmt = block->stmts.stmts[i];
+            interpret_stmt(local_stmt, &err);
+            if (err)
+            {
+                *out_err = err;
+                return;
+            }
+        }
+
+        environment_destroy(&env);
+        env = prev_env;
     }
     break;
     }

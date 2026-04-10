@@ -8,10 +8,9 @@
 #ifndef _PARSER_H
 #define _PARSER_H
 
-#include "declaration.h"
 #include "expression.h"
 #include "statement.h"
 
-declaration_list_t parse(token_list_t* _tokens, bool* has_error);
+stmt_list_t parse(token_list_t* _tokens, bool* has_error);
 
 #endif

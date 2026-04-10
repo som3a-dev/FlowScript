@@ -14,6 +14,6 @@
 void init_interpreter();
 void destroy_interpreter();
 
-void interpret(const declaration_list_t* stmts);
+void interpret(const stmt_list_t* stmts);
 
 #endif

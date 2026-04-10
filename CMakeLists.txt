@@ -24,7 +24,6 @@ set(SOURCES
   source/environment.c
   source/expression.c
   source/statement.c
-  source/declaration.c
 )
 
 add_compile_definitions(USE_NEW_CACHE _CRT_SECURE_NO_WARNINGS)

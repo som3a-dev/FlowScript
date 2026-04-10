@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static declaration_t* parse_declaration();
+static stmt_t* parse_declaration();
 static stmt_t* parse_stmt();
 static expr_t* parse_expr();
 
@@ -77,15 +77,15 @@ static inline token_t get_token(bool advance)
     return tok;
 }
 
-declaration_list_t parse(token_list_t* _tokens, bool* has_error)
+stmt_list_t parse(token_list_t* _tokens, bool* has_error)
 {
     curr = 0;
     tokens = _tokens;
 
-    declaration_list_t list = { 0 };
+    stmt_list_t list = { 0 };
     while (curr < tokens->len)
     {
-        declaration_t* stmt = parse_declaration();
+        stmt_t* stmt = parse_declaration();
         if (!stmt)
         {
             if (has_error)
@@ -95,52 +95,51 @@ declaration_list_t parse(token_list_t* _tokens, bool* has_error)
             break;
         }
 
-        declaration_list_push(&list, stmt);
+        stmt_list_push(&list, stmt);
     }
 
     return list;
 }
 
-static declaration_var_t* parse_var_declaration();
-static declaration_block_t* parse_block_declaration();
-static declaration_stmt_t* parse_stmt_declaration();
+static stmt_var_t* parse_var_declaration();
+static stmt_block_t* parse_block_declaration();
 
-static declaration_t* parse_declaration()
+static stmt_t* parse_declaration()
 {
     token_t tok = get_token(false);
     if (tok.type == TOKEN_VAR)
     {
         curr++;
 
-        return (declaration_t*)(parse_var_declaration());
+        return (stmt_t*)(parse_var_declaration());
     }
     else if (tok.type == TOKEN_LEFT_BRACE)
     {
         curr++;
 
-        return (declaration_t*)(parse_block_declaration());
+        return (stmt_t*)(parse_block_declaration());
     }
 
-    return (declaration_t*)(parse_stmt_declaration());
+    return (stmt_t*)(parse_stmt());
 }
 
-static declaration_block_t* parse_block_declaration()
+static stmt_block_t* parse_block_declaration()
 {
-    declaration_block_t* block = malloc(sizeof(declaration_block_t));
-    block->d.type = DECLARATION_BLOCK;
-    block->stmts = (declaration_list_t) { 0 };
+    stmt_block_t* block = malloc(sizeof(stmt_block_t));
+    block->s.type = STMT_BLOCK;
+    block->stmts = (stmt_list_t) { 0 };
 
     token_t tok = get_token(false);
     while (tok.type != TOKEN_RIGHT_BRACE && tok.type != TOKEN_NONE)
     {
-        declaration_list_push(&(block->stmts), parse_declaration());
+        stmt_list_push(&(block->stmts), parse_declaration());
         tok = get_token(false);
     }
 
     if (tok.type != TOKEN_RIGHT_BRACE)
     {
         printf("PARSER ERROR: Expected '}' at the end of the block.\n");
-        declaration_free((declaration_t*)block);
+        stmt_free((stmt_t*)block);
 
         return NULL;
     }
@@ -152,7 +151,7 @@ static declaration_block_t* parse_block_declaration()
     return block;
 }
 
-static declaration_var_t* parse_var_declaration()
+static stmt_var_t* parse_var_declaration()
 {
     token_t name = get_token(true);
     if (name.type != TOKEN_IDENTIFIER)
@@ -183,31 +182,16 @@ static declaration_var_t* parse_var_declaration()
     }
     curr++;
 
-    declaration_var_t* d = malloc(sizeof(declaration_var_t));
-    d->d.type = DECLARATION_VAR;
-    d->expr = expr;
-    d->name = name;
+    stmt_var_t* s = malloc(sizeof(stmt_var_t));
+    s->s.type = STMT_VAR;
+    s->expr = expr;
+    s->name = name;
 
-    return d;
-}
-
-static declaration_stmt_t* parse_stmt_declaration()
-{
-    declaration_stmt_t* d = malloc(sizeof(declaration_stmt_t));
-    d->d.type = DECLARATION_STMT;
-    d->stmt = parse_stmt();
-
-    if (d->stmt == NULL)
-    {
-        free(d);
-        return NULL;
-    }
-
-    return d;
+    return s;
 }
 
 static stmt_print_t* parse_stmt_print();
-static stmt_expr_t* parse_expr_stmt();
+static stmt_expr_t* parse_stmt_expr();
 
 static stmt_t* parse_stmt()
 {
@@ -219,7 +203,9 @@ static stmt_t* parse_stmt()
         return (stmt_t*)(parse_stmt_print());
     }
 
-    return (stmt_t*)(parse_expr_stmt());
+    return (stmt_t*)(parse_stmt_expr());
+}
+
 }
 
 static stmt_print_t* parse_stmt_print()
@@ -245,7 +231,7 @@ static stmt_print_t* parse_stmt_print()
     return stmt;
 }
 
-static stmt_expr_t* parse_expr_stmt()
+static stmt_expr_t* parse_stmt_expr()
 {
     expr_t* expr = parse_expr();
     if (!expr)
