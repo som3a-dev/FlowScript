@@ -160,6 +160,7 @@ static stmt_print_t* parse_stmt_print();
 static stmt_expr_t* parse_stmt_expr();
 static stmt_if_t* parse_stmt_if();
 static stmt_block_t* parse_stmt_block();
+static stmt_while_t* parse_stmt_while();
 
 static stmt_t* parse_stmt()
 {
@@ -181,8 +182,54 @@ static stmt_t* parse_stmt()
 
         return (stmt_t*)(parse_stmt_block());
     }
+    else if (tok.type == TOKEN_WHILE)
+    {
+        curr++;
+
+        return (stmt_t*)(parse_stmt_while());
+    }
 
     return (stmt_t*)(parse_stmt_expr());
+}
+
+static stmt_while_t* parse_stmt_while()
+{
+    token_t tok = get_token(false);
+    if (tok.type != TOKEN_LEFT_PAREN)
+    {
+        printf("PARSER ERROR: Expected '(' after 'while'.\n");
+        return NULL;
+    }
+    curr++;
+
+    expr_t* condition = parse_expr();
+    if (!condition)
+    {
+        return NULL;
+    }
+
+    tok = get_token(false);
+    if (tok.type != TOKEN_RIGHT_PAREN)
+    {
+        printf("PARSER ERROR: Expected ')' after condition.\n");
+        expr_free(condition);
+        return NULL;
+    }
+    curr++;
+
+    stmt_t* body = parse_stmt();
+    if (!body)
+    {
+        expr_free(condition);
+        return NULL;
+    }
+
+    stmt_while_t* stmt = malloc(sizeof(stmt_while_t));
+    stmt->s.type = STMT_WHILE;
+    stmt->condition = condition;
+    stmt->body = body;
+
+    return stmt;
 }
 
 static stmt_block_t* parse_stmt_block()

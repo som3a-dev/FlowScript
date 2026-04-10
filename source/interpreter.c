@@ -160,6 +160,35 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
         }
     }
     break;
+
+    case STMT_WHILE:
+    {
+        stmt_while_t* s = (stmt_while_t*)stmt;
+
+        object_t condition;
+        do
+        {
+            condition = interpret_expr(s->condition, &err);
+            if (err)
+            {
+                *out_err = err;
+                return;
+            }
+
+            interpret_stmt(s->body, &err);
+            if (err)
+            {
+                *out_err = err;
+                return;
+            }
+
+            if (s->condition->type != EXPR_VAR)
+            {
+                object_free(&condition);
+            }
+        } while (object_is_truthy(&condition));
+    }
+    break;
     }
 }
 

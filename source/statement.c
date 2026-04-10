@@ -59,6 +59,14 @@ void stmt_free(stmt_t* stmt)
     }
     break;
 
+    case STMT_WHILE:
+    {
+        stmt_while_t* s = (stmt_while_t*)stmt;
+        expr_free(s->condition);
+        stmt_free(s->body);
+    }
+    break;
+
     default:
         assert(false);
     }

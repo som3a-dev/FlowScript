@@ -16,7 +16,8 @@ typedef enum
     STMT_PRINT,
     STMT_IF,
     STMT_VAR, // variable declaration
-    STMT_BLOCK // Block/Scope
+    STMT_BLOCK, // block/scope,
+    STMT_WHILE // while loop
 } stmt_type_t;
 
 typedef struct
@@ -67,6 +68,14 @@ typedef struct
     stmt_t* then_branch;
     stmt_t* else_branch;
 } stmt_if_t;
+
+typedef struct
+{
+    stmt_t s;
+
+    expr_t* condition;
+    stmt_t* body;
+} stmt_while_t;
 
 void stmt_free(stmt_t* stmt);
 void stmt_print(const stmt_t* stmt);
