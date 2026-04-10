@@ -190,11 +190,61 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         if (err)
         {
             *out_err = err;
+            break;
         }
-        else
+
+        environment_assign(&env, e->name.lexeme, &val);
+        obj = val;
+    }
+    break;
+
+    case EXPR_LOGICAL:
+    {
+        expr_logical_t* e = (expr_logical_t*)expr;
+        obj.type = OBJECT_BOOL;
+
+        object_t left = interpret_expr(e->left, &err);
+        if (err)
         {
-            environment_assign(&env, e->name.lexeme, &val);
-            obj = val;
+            *out_err = err;
+            break;
+        }
+
+        /*        if (e->operator.type == TOKEN_OR)
+                {
+                    if (object_is_truthy(&left))
+                    {
+                        obj.val.boolean = true;
+                    }
+                }
+                else if (e->operator.type == TOKEN_AND)
+                {
+                    if (!object_is_truthy(&left))
+                    {
+                        obj.val.boolean = false;
+                    }
+                } */
+
+        object_t right = interpret_expr(e->right, &err);
+        if (err)
+        {
+            *out_err = err;
+            break;
+        }
+
+        if (e->operator.type == TOKEN_OR)
+        {
+            if (object_is_truthy(&left) || object_is_truthy(&right))
+            {
+                obj.val.boolean = true;
+            }
+        }
+        else if (e->operator.type == TOKEN_AND)
+        {
+            if (object_is_truthy(&left) && object_is_truthy(&right))
+            {
+                obj.val.boolean = true;
+            }
         }
     }
     break;

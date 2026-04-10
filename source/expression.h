@@ -18,7 +18,8 @@ typedef enum
     EXPR_GROUPING,
     EXPR_LITERAL,
     EXPR_UNARY,
-    EXPR_VAR
+    EXPR_VAR,
+    EXPR_LOGICAL
 } expr_type_t;
 
 typedef struct
@@ -42,6 +43,15 @@ typedef struct
     token_t operator;
     expr_t* right;
 } expr_binary_t;
+
+typedef struct
+{
+    expr_t e;
+
+    expr_t* left;
+    token_t operator;
+    expr_t* right;
+} expr_logical_t;
 
 typedef struct
 {

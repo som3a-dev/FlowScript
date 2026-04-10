@@ -69,6 +69,14 @@ void expr_free(expr_t* expr)
     }
     break;
 
+    case EXPR_LOGICAL:
+    {
+        expr_logical_t* e = (expr_logical_t*)expr;
+        expr_free(e->left);
+        expr_free(e->right);
+    }
+    break;
+
     default:
         assert(false);
     }

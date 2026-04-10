@@ -1,0 +1,7 @@
+Although FlowScript is based heavily on lox, it is not lox, and does not necessarily adhere to its specification.
+This document will aim to point out all the design decisions FlowScript took that stray away from lox
+
+
+Logical Operators:
+    - In FlowScript, a logical expression returns either true or false. That is different from lox, in which a logical expression returns 
+    the left or right operands, as it only guarantees that logical expressions return a value of the correct "truthiness"

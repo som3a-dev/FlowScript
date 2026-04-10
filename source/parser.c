@@ -20,8 +20,9 @@ static stmt_t* parse_stmt();
 static expr_t* parse_expr();
 
 static expr_t* parse_series();
-
 static expr_t* parse_assignment();
+static expr_t* parse_or();
+static expr_t* parse_and();
 static expr_t* parse_equality();
 static expr_t* parse_comparison();
 static expr_t* parse_term();
@@ -101,8 +102,7 @@ stmt_list_t parse(token_list_t* _tokens, bool* has_error)
     return list;
 }
 
-static stmt_var_t* parse_var_declaration();
-static stmt_block_t* parse_block_declaration();
+static stmt_var_t* parse_declaration_var();
 
 static stmt_t* parse_declaration()
 {
@@ -111,47 +111,13 @@ static stmt_t* parse_declaration()
     {
         curr++;
 
-        return (stmt_t*)(parse_var_declaration());
-    }
-    else if (tok.type == TOKEN_LEFT_BRACE)
-    {
-        curr++;
-
-        return (stmt_t*)(parse_block_declaration());
+        return (stmt_t*)(parse_declaration_var());
     }
 
     return (stmt_t*)(parse_stmt());
 }
 
-static stmt_block_t* parse_block_declaration()
-{
-    stmt_block_t* block = malloc(sizeof(stmt_block_t));
-    block->s.type = STMT_BLOCK;
-    block->stmts = (stmt_list_t) { 0 };
-
-    token_t tok = get_token(false);
-    while (tok.type != TOKEN_RIGHT_BRACE && tok.type != TOKEN_NONE)
-    {
-        stmt_list_push(&(block->stmts), parse_declaration());
-        tok = get_token(false);
-    }
-
-    if (tok.type != TOKEN_RIGHT_BRACE)
-    {
-        printf("PARSER ERROR: Expected '}' at the end of the block.\n");
-        stmt_free((stmt_t*)block);
-
-        return NULL;
-    }
-    else
-    {
-        curr++;
-    }
-
-    return block;
-}
-
-static stmt_var_t* parse_var_declaration()
+static stmt_var_t* parse_declaration_var()
 {
     token_t name = get_token(true);
     if (name.type != TOKEN_IDENTIFIER)
@@ -193,6 +159,7 @@ static stmt_var_t* parse_var_declaration()
 static stmt_print_t* parse_stmt_print();
 static stmt_expr_t* parse_stmt_expr();
 static stmt_if_t* parse_stmt_if();
+static stmt_block_t* parse_stmt_block();
 
 static stmt_t* parse_stmt()
 {
@@ -208,8 +175,42 @@ static stmt_t* parse_stmt()
         curr++;
         return (stmt_t*)(parse_stmt_if());
     }
+    else if (tok.type == TOKEN_LEFT_BRACE)
+    {
+        curr++;
+
+        return (stmt_t*)(parse_stmt_block());
+    }
 
     return (stmt_t*)(parse_stmt_expr());
+}
+
+static stmt_block_t* parse_stmt_block()
+{
+    stmt_block_t* block = malloc(sizeof(stmt_block_t));
+    block->s.type = STMT_BLOCK;
+    block->stmts = (stmt_list_t) { 0 };
+
+    token_t tok = get_token(false);
+    while (tok.type != TOKEN_RIGHT_BRACE && tok.type != TOKEN_NONE)
+    {
+        stmt_list_push(&(block->stmts), parse_declaration());
+        tok = get_token(false);
+    }
+
+    if (tok.type != TOKEN_RIGHT_BRACE)
+    {
+        printf("PARSER ERROR: Expected '}' at the end of the block.\n");
+        stmt_free((stmt_t*)block);
+
+        return NULL;
+    }
+    else
+    {
+        curr++;
+    }
+
+    return block;
 }
 
 static stmt_if_t* parse_stmt_if()
@@ -352,6 +353,14 @@ static inline expr_var_t* new_var_expr()
     return expr;
 }
 
+static inline expr_logical_t* new_logical_expr()
+{
+    expr_logical_t* expr = calloc(1, sizeof(expr_logical_t));
+    expr->e.type = EXPR_LOGICAL;
+
+    return expr;
+}
+
 static expr_t* parse_series()
 {
     expr_t* expr = parse_assignment();
@@ -383,7 +392,7 @@ static expr_t* parse_series()
 
 static expr_t* parse_assignment()
 {
-    expr_t* expr = parse_equality();
+    expr_t* expr = parse_or();
     if (expr == NULL)
     {
         return NULL;
@@ -415,6 +424,52 @@ static expr_t* parse_assignment()
             expr_free(expr);
             return NULL;
         }
+    }
+
+    return expr;
+}
+
+static expr_t* parse_or()
+{
+    expr_t* expr = parse_and();
+
+    token_t tok = get_token(false);
+    while (tok.type == TOKEN_OR)
+    {
+        curr++;
+        expr_t* right = parse_and();
+
+        expr_logical_t* logical = new_logical_expr();
+        logical->left = expr;
+        logical->right = right;
+        logical->operator = tok;
+
+        expr = (expr_t*)logical;
+
+        tok = get_token(false);
+    }
+
+    return expr;
+}
+
+static expr_t* parse_and()
+{
+    expr_t* expr = parse_equality();
+
+    token_t tok = get_token(false);
+    while (tok.type == TOKEN_AND)
+    {
+        curr++;
+        expr_t* right = parse_equality();
+
+        expr_logical_t* logical = new_logical_expr();
+        logical->left = expr;
+        logical->right = right;
+        logical->operator = tok;
+
+        expr = (expr_t*)logical;
+
+        tok = get_token(false);
     }
 
     return expr;
