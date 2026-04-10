@@ -161,6 +161,7 @@ static stmt_expr_t* parse_stmt_expr();
 static stmt_if_t* parse_stmt_if();
 static stmt_block_t* parse_stmt_block();
 static stmt_while_t* parse_stmt_while();
+static stmt_while_t* parse_stmt_for();
 
 static stmt_t* parse_stmt()
 {
@@ -188,8 +189,131 @@ static stmt_t* parse_stmt()
 
         return (stmt_t*)(parse_stmt_while());
     }
+    else if (tok.type == TOKEN_FOR)
+    {
+        curr++;
+
+        return (stmt_t*)(parse_stmt_for());
+    }
 
     return (stmt_t*)(parse_stmt_expr());
+}
+
+static stmt_while_t* parse_stmt_for()
+{
+    token_t tok = get_token(false);
+    if (tok.type != TOKEN_LEFT_PAREN)
+    {
+        printf("PARSER ERROR: Expected '(' after 'for'.\n");
+        return NULL;
+    }
+    curr++;
+
+    tok = get_token(false);
+
+    stmt_t* initializer = NULL;
+    if (tok.type == TOKEN_VAR)
+    {
+        curr++;
+        initializer = (stmt_t*)parse_declaration_var();
+        if (!initializer)
+        {
+            return NULL;
+        }
+    }
+    else if (tok.type == TOKEN_SEMICOLON)
+    {
+        curr++;
+        initializer = NULL;
+    }
+    else
+    {
+        initializer = (stmt_t*)parse_stmt_expr();
+        if (!initializer)
+        {
+            return NULL;
+        }
+    }
+
+    expr_t* condition = NULL;
+    tok = get_token(false);
+    if (tok.type != TOKEN_SEMICOLON)
+    {
+        condition = parse_expr();
+    }
+
+    tok = get_token(false);
+    if (tok.type != TOKEN_SEMICOLON)
+    {
+        printf("PARSER ERROR: Expected ';' after loop condition.\n");
+
+        expr_free(condition);
+        stmt_free(initializer);
+        return NULL;
+    }
+    curr++;
+
+    expr_t* increment = parse_expr();
+    tok = get_token(false);
+    if (tok.type != TOKEN_RIGHT_PAREN)
+    {
+        printf("PARSER ERROR: Expected ')' after for loop clauses.\n");
+
+        expr_free(condition);
+        expr_free(increment);
+        stmt_free(initializer);
+        return NULL;
+    }
+    curr++;
+
+    stmt_t* body = parse_stmt();
+
+    if (increment != NULL)
+    {
+        stmt_block_t* block = calloc(1, sizeof(stmt_block_t));
+        block->s.type = STMT_BLOCK;
+
+        stmt_expr_t* increment_stmt = calloc(1, sizeof(stmt_expr_t));
+        increment_stmt->s.type = STMT_EXPR;
+        increment_stmt->expr = increment;
+
+        stmt_list_push(&(block->stmts), body);
+        stmt_list_push(&(block->stmts), (stmt_t*)increment_stmt);
+
+        body = (stmt_t*)block;
+    }
+
+    if (condition == NULL)
+    {
+        expr_literal_t* true_expr = calloc(1, sizeof(expr_literal_t));
+        true_expr->e.type = EXPR_LITERAL;
+        true_expr->type = OBJECT_BOOL;
+        true_expr->val.boolean = true;
+
+        condition = (expr_t*)true_expr;
+    }
+
+    {
+        stmt_while_t* while_stmt = calloc(1, sizeof(stmt_while_t));
+        while_stmt->s.type = STMT_WHILE;
+        while_stmt->body = body;
+        while_stmt->condition = condition;
+
+        body = (stmt_t*)while_stmt;
+    }
+
+    if (initializer != NULL)
+    {
+        stmt_block_t* block = calloc(1, sizeof(stmt_block_t));
+        block->s.type = STMT_BLOCK;
+
+        stmt_list_push(&(block->stmts), initializer);
+        stmt_list_push(&(block->stmts), body);
+
+        body = (stmt_t*)block;
+    }
+
+    return (stmt_while_t*)body;
 }
 
 static stmt_while_t* parse_stmt_while()
