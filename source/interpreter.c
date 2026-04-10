@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void interpret_declaration(const stmt_t* d, const char** out_err);
 static void interpret_stmt(const stmt_t* stmt, const char** out_err);
 static object_t interpret_expr(const expr_t* expr, const char** out_err);
 
