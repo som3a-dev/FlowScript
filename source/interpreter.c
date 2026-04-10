@@ -495,9 +495,11 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
     break;
     }
 
-    if (out_err)
+    if (err && out_err)
     {
         *out_err = err;
+        object_free(&obj);
+        return (object_t) { 0 };
     }
     return obj;
 }
