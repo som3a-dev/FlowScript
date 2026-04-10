@@ -62,7 +62,7 @@ object_t environment_get(const environment_t* env, const char* name)
         for (int i = index + 1; i < env->vals_count; i++)
         {
             e++;
-            if (strcmp(e->name, name) == 0)
+            if ((e->name) && strcmp(e->name, name) == 0)
             {
                 return e->val;
             }
@@ -115,12 +115,12 @@ void environment_assign(environment_t* env, const char* name, const object_t* va
     uint32_t index = hash(name) % env->vals_count;
 
     environment_entry_t* e = env->vals + index;
-    if (strcmp(e->name, name) != 0)
+    if ((e->name == NULL) || (strcmp(e->name, name) != 0))
     {
         for (int i = index + 1; i < env->vals_count; i++)
         {
             e++;
-            if (strcmp(e->name, name) == 0)
+            if ((e->name) && (strcmp(e->name, name) == 0))
             {
                 goto assign_entry;
             }
