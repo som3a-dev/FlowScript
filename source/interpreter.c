@@ -65,6 +65,13 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
         if (obj.type != _OBJECT_INVALID)
         {
             object_print(&obj);
+
+            // TODO(omar): maybe interpret_expr() should return a copy of the object in the case of a var expression
+            // so we don't have to do this
+            if (s->expr->type != EXPR_VAR)
+            {
+                object_free(&obj);
+            }
         }
     }
     break;
