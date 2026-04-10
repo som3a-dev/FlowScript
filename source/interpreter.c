@@ -420,8 +420,14 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         break;
         }
 
-        object_free(&left);
-        object_free(&right);
+        if (e->left->type != EXPR_VAR)
+        {
+            object_free(&left);
+        }
+        if (e->right->type != EXPR_VAR)
+        {
+            object_free(&right);
+        }
     }
     break;
 
