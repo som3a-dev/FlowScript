@@ -57,7 +57,6 @@ int main(void)
     init_crtdbg();
 #endif
 
-    init_interpreter();
     while (running)
     {
         printf("> ");
@@ -82,7 +81,9 @@ int main(void)
             goto done;
         }
 
+        init_interpreter();
         interpret(&stmts);
+        destroy_interpreter();
 
     done:
         stmt_list_free(&stmts);
@@ -90,8 +91,6 @@ int main(void)
 
         buf[0] = '\0'; // clear the buffer
     }
-
-    destroy_interpreter();
 
     return 0;
 }
