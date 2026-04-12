@@ -9,6 +9,7 @@
 #define _LIST_H
 
 typedef struct stmt_t stmt_t;
+typedef struct expr_t expr_t;
 
 /*
  * This is a list of statements (like token_list_t), not a list
@@ -20,8 +21,18 @@ typedef struct
     int len;
 } list_stmt_t;
 
+typedef struct
+{
+    expr_t** exprs;
+    int len;
+} list_expr_t;
+
 void list_stmt_push(list_stmt_t* list, stmt_t* stmt);
 void list_stmt_print(const list_stmt_t* list);
 void list_stmt_free(list_stmt_t* list);
+
+void list_expr_push(list_expr_t* list, expr_t* stmt);
+void list_expr_print(const list_expr_t* list);
+void list_expr_free(list_expr_t* list);
 
 #endif

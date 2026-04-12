@@ -59,3 +59,49 @@ void list_stmt_free(list_stmt_t* list)
 
     free(list->stmts);
 }
+
+void list_expr_push(list_expr_t* list, expr_t* expr)
+{
+    assert(list);
+    if (!expr)
+    {
+        return;
+    }
+
+    list->len++;
+
+    if (list->exprs)
+    {
+        list->exprs = realloc(list->exprs, sizeof(expr_t*) * list->len);
+    }
+    else
+    {
+        list->exprs = malloc(sizeof(expr_t*) * list->len);
+    }
+
+    list->exprs[list->len - 1] = expr;
+}
+
+void list_expr_print(const list_expr_t* list)
+{
+    assert(list);
+
+    for (int i = 0; i < list->len; i++)
+    {
+        char* str = expr_to_str(list->exprs[i]);
+        printf("%s\n", str);
+        free(str);
+    }
+}
+
+void list_expr_free(list_expr_t* list)
+{
+    assert(list);
+
+    for (int i = 0; i < list->len; i++)
+    {
+        expr_free(list->exprs[i]);
+    }
+
+    free(list->exprs);
+}

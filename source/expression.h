@@ -22,7 +22,7 @@ typedef enum
     EXPR_LOGICAL
 } expr_type_t;
 
-typedef struct
+typedef struct expr_t
 {
     expr_type_t type;
 } expr_t;
