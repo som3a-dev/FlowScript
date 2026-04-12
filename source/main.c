@@ -24,6 +24,7 @@
 #include "scanner.h"
 
 // Maximum size of user's input string
+// TODO(omar): remove the size cap, we can run files now
 #define MAX_INPUT_SIZE 512
 
 static bool running = true;
