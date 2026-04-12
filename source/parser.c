@@ -78,12 +78,12 @@ static inline token_t get_token(bool advance)
     return tok;
 }
 
-stmt_list_t parse(token_list_t* _tokens, bool* has_error)
+list_stmt_t parse(token_list_t* _tokens, bool* has_error)
 {
     curr = 0;
     tokens = _tokens;
 
-    stmt_list_t list = { 0 };
+    list_stmt_t list = { 0 };
     while (curr < tokens->len)
     {
         stmt_t* stmt = parse_declaration();
@@ -96,7 +96,7 @@ stmt_list_t parse(token_list_t* _tokens, bool* has_error)
             break;
         }
 
-        stmt_list_push(&list, stmt);
+        list_stmt_push(&list, stmt);
     }
 
     return list;
@@ -277,8 +277,8 @@ static stmt_while_t* parse_stmt_for()
         increment_stmt->s.type = STMT_EXPR;
         increment_stmt->expr = increment;
 
-        stmt_list_push(&(block->stmts), body);
-        stmt_list_push(&(block->stmts), (stmt_t*)increment_stmt);
+        list_stmt_push(&(block->stmts), body);
+        list_stmt_push(&(block->stmts), (stmt_t*)increment_stmt);
 
         body = (stmt_t*)block;
     }
@@ -307,8 +307,8 @@ static stmt_while_t* parse_stmt_for()
         stmt_block_t* block = calloc(1, sizeof(stmt_block_t));
         block->s.type = STMT_BLOCK;
 
-        stmt_list_push(&(block->stmts), initializer);
-        stmt_list_push(&(block->stmts), body);
+        list_stmt_push(&(block->stmts), initializer);
+        list_stmt_push(&(block->stmts), body);
 
         body = (stmt_t*)block;
     }
@@ -360,12 +360,12 @@ static stmt_block_t* parse_stmt_block()
 {
     stmt_block_t* block = malloc(sizeof(stmt_block_t));
     block->s.type = STMT_BLOCK;
-    block->stmts = (stmt_list_t) { 0 };
+    block->stmts = (list_stmt_t) { 0 };
 
     token_t tok = get_token(false);
     while (tok.type != TOKEN_RIGHT_BRACE && tok.type != TOKEN_NONE)
     {
-        stmt_list_push(&(block->stmts), parse_declaration());
+        list_stmt_push(&(block->stmts), parse_declaration());
         tok = get_token(false);
     }
 

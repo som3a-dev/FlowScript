@@ -29,7 +29,7 @@ void destroy_interpreter()
     environment_destroy(&env);
 }
 
-void interpret(const stmt_list_t* stmts)
+void interpret(const list_stmt_t* stmts)
 {
     const char* err = NULL;
     for (int i = 0; i < stmts->len; i++)

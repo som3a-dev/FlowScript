@@ -11,6 +11,6 @@
 #include "expression.h"
 #include "statement.h"
 
-stmt_list_t parse(token_list_t* _tokens, bool* has_error);
+list_stmt_t parse(token_list_t* _tokens, bool* has_error);
 
 #endif

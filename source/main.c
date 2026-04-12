@@ -79,7 +79,7 @@ int main(void)
         {
             goto done;
         }
-        stmt_list_t stmts = parse(&tokens, &error);
+        list_stmt_t stmts = parse(&tokens, &error);
         if (error)
         {
             goto done;
@@ -93,7 +93,7 @@ int main(void)
         interpret(&stmts);
 
     done:
-        stmt_list_free(&stmts);
+        list_stmt_free(&stmts);
         token_list_delete(&tokens);
 
         buf[0] = '\0'; // clear the buffer
