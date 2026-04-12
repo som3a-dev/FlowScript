@@ -28,6 +28,8 @@
 
 static bool running = true;
 
+static bool executing_file = false;
+
 static bool exec_command(const char* input);
 
 static void read_input_file(const char* filename);
@@ -57,6 +59,7 @@ int main(void)
     init_crtdbg();
 #endif
 
+    init_interpreter();
     while (running)
     {
         printf("> ");
@@ -81,16 +84,28 @@ int main(void)
             goto done;
         }
 
-        init_interpreter();
+        if (executing_file)
+        {
+            init_interpreter();
+        }
+
         interpret(&stmts);
-        destroy_interpreter();
 
     done:
         stmt_list_free(&stmts);
         token_list_delete(&tokens);
 
         buf[0] = '\0'; // clear the buffer
+
+        if (executing_file)
+        {
+            destroy_interpreter();
+        }
+
+        executing_file = false;
     }
+
+    destroy_interpreter();
 
     return 0;
 }
