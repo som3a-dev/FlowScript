@@ -20,6 +20,7 @@ static environment_t env = { 0 };
 
 void init_interpreter()
 {
+    environment_destroy(&env);
     environment_init(&env, NULL);
 }
 
