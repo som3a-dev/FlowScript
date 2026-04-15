@@ -6,6 +6,7 @@
  */
 
 #include "list.h"
+#include "scanner.h"
 #include "statement.h"
 
 #include <assert.h>
@@ -147,4 +148,29 @@ void list_object_free(list_object_t* list, bool free_objects)
     }
 
     free(list->objects);
+}
+
+void list_token_push(list_token_t* list, token_t tok)
+{
+    assert(list);
+
+    list->len++;
+
+    if (list->tokens)
+    {
+        list->tokens = realloc(list->tokens, sizeof(token_t) * list->len);
+    }
+    else
+    {
+        list->tokens = malloc(sizeof(token_t) * list->len);
+    }
+
+    list->tokens[list->len - 1] = tok;
+}
+
+void list_token_free(list_token_t* list)
+{
+    assert(list);
+
+    free(list->tokens);
 }
