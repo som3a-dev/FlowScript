@@ -212,6 +212,40 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
 
     switch (expr->type)
     {
+
+    case EXPR_CALL:
+    {
+        expr_call_t* call = (expr_call_t*)expr;
+        object_t callee = interpret_expr(call->callee, &err);
+        if (err)
+        {
+            *out_err = err;
+            object_free(&callee);
+            break;
+        }
+
+        list_object_t args = { 0 };
+        for (int i = 0; i < call->args.len; i++)
+        {
+            expr_t* arg = call->args.exprs[i];
+            object_t val = interpret_expr(arg, &err);
+            if (err)
+            {
+                *out_err = err;
+                list_object_free(&args, true);
+                object_free(&callee);
+                goto exit_expr_call;
+            }
+
+            list_object_push(&args, val);
+        }
+
+        list_object_print(&args);
+        list_object_free(&args, true);
+    }
+    exit_expr_call:
+        break;
+
     case EXPR_ASSIGN:
     {
         expr_assign_t* e = (expr_assign_t*)expr;
