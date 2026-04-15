@@ -8,16 +8,25 @@
 #ifndef _OBJECT_H
 #define _OBJECT_H
 
+#include "list.h"
+
 #include <stdbool.h>
 
 typedef enum
 {
-    _OBJECT_INVALID,
+    _OBJECT_INVALID, // Don't ever make this not 0, a lot of code depends on it
     OBJECT_BOOL,
     OBJECT_STRING,
     OBJECT_NUMBER,
-    OBJECT_NIL
+    OBJECT_NIL,
+    OBJECT_CALLABLE
 } object_type_t;
+
+typedef struct
+{
+    int arity;
+    object_t (*call)(list_object_t* args);
+} callable_data_t;
 
 typedef struct object_t
 {
@@ -27,6 +36,7 @@ typedef struct object_t
         float num;
         char* str;
         bool boolean;
+        callable_data_t call;
     } val;
 } object_t;
 

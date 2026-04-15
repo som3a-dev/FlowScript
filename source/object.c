@@ -55,6 +55,12 @@ void object_print(const object_t* obj)
     }
     break;
 
+    case OBJECT_CALLABLE:
+    {
+        printf("Callable %p\n", obj->val.call.call);
+    }
+    break;
+
     case _OBJECT_INVALID:
     {
         printf("(INVALID OBJECT)\n");
