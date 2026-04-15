@@ -31,6 +31,13 @@ static expr_t* parse_unary();
 static expr_t* parse_call();
 static expr_t* parse_primary();
 
+static stmt_print_t* parse_stmt_print();
+static stmt_expr_t* parse_stmt_expr();
+static stmt_if_t* parse_stmt_if();
+static stmt_block_t* parse_stmt_block();
+static stmt_while_t* parse_stmt_while();
+static stmt_while_t* parse_stmt_for();
+
 static bool str_equal(const char* str, int n, ...)
 {
     if (!str)
@@ -104,6 +111,7 @@ list_stmt_t parse(token_list_t* _tokens, bool* has_error)
 }
 
 static stmt_var_t* parse_declaration_var();
+static stmt_function_t* parse_declaration_fun();
 
 static stmt_t* parse_declaration()
 {
@@ -114,8 +122,88 @@ static stmt_t* parse_declaration()
 
         return (stmt_t*)(parse_declaration_var());
     }
+    else if (tok.type == TOKEN_FUN)
+    {
+        curr++;
+
+        return (stmt_t*)(parse_declaration_fun());
+    }
 
     return (stmt_t*)(parse_stmt());
+}
+
+static stmt_function_t* parse_declaration_fun()
+{
+    token_t name = get_token(false);
+    if (name.type != TOKEN_IDENTIFIER)
+    {
+        printf("PARSER ERROR: Expected a function name.\n");
+        return NULL;
+    }
+    curr++;
+
+    token_t tok = get_token(false);
+    if (tok.type != TOKEN_LEFT_PAREN)
+    {
+        printf("PARSER ERROR: Expected '(' after function name.\n");
+        return NULL;
+    }
+    curr++;
+
+    list_token_t params = { 0 };
+    tok = get_token(false);
+
+    if (tok.type != TOKEN_RIGHT_PAREN)
+    {
+        while (true)
+        {
+            tok = get_token(false);
+            list_token_push(&params, tok);
+            printf("%s\n", tok.lexeme);
+
+            curr++;
+            tok = get_token(false);
+            if (tok.type != TOKEN_COMMA)
+            {
+                break;
+            }
+
+            curr++;
+        }
+    }
+
+    tok = get_token(false);
+    if (tok.type != TOKEN_RIGHT_PAREN)
+    {
+        printf("PARSER ERROR: Expected ')' after function parameters.\n");
+        list_token_free(&params);
+        return NULL;
+    }
+    curr++;
+
+    tok = get_token(false);
+    if (tok.type != TOKEN_LEFT_BRACE)
+    {
+        printf("PARSER ERROR: Expected '{' before function body.\n");
+        list_token_free(&params);
+        return NULL;
+    }
+    curr++;
+
+    stmt_block_t* block = parse_stmt_block();
+    if (!block)
+    {
+        list_token_free(&params);
+        return NULL;
+    }
+
+    stmt_function_t* func = calloc(1, sizeof(stmt_function_t));
+    func->s.type = STMT_FUNCTION;
+    func->params = params;
+    func->body = block;
+    func->name = name;
+
+    return func;
 }
 
 static stmt_var_t* parse_declaration_var()
@@ -123,7 +211,7 @@ static stmt_var_t* parse_declaration_var()
     token_t name = get_token(true);
     if (name.type != TOKEN_IDENTIFIER)
     {
-        printf("PARSER ERROR: Expected variable name.\n");
+        printf("PARSER ERROR: Expected a variable name.\n");
         return NULL;
     }
 
@@ -156,13 +244,6 @@ static stmt_var_t* parse_declaration_var()
 
     return s;
 }
-
-static stmt_print_t* parse_stmt_print();
-static stmt_expr_t* parse_stmt_expr();
-static stmt_if_t* parse_stmt_if();
-static stmt_block_t* parse_stmt_block();
-static stmt_while_t* parse_stmt_while();
-static stmt_while_t* parse_stmt_for();
 
 static stmt_t* parse_stmt()
 {

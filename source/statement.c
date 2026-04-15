@@ -67,6 +67,14 @@ void stmt_free(stmt_t* stmt)
     }
     break;
 
+    case STMT_FUNCTION:
+    {
+        stmt_function_t* s = (stmt_function_t*)stmt;
+        stmt_free((stmt_t*)(s->body));
+        list_token_free(&(s->params));
+    }
+    break;
+
     default:
         assert(false);
     }
