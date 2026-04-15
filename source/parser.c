@@ -28,6 +28,7 @@ static expr_t* parse_comparison();
 static expr_t* parse_term();
 static expr_t* parse_factor();
 static expr_t* parse_unary();
+static expr_t* parse_call();
 static expr_t* parse_primary();
 
 static bool str_equal(const char* str, int n, ...)
@@ -500,6 +501,14 @@ static inline expr_unary_t* new_unary_expr()
     return expr;
 }
 
+static inline expr_call_t* new_call_expr()
+{
+    expr_call_t* expr = calloc(1, sizeof(expr_call_t));
+    expr->e.type = EXPR_CALL;
+
+    return expr;
+}
+
 static inline expr_literal_t* new_literal_expr()
 {
     expr_literal_t* expr = calloc(1, sizeof(expr_literal_t));
@@ -771,7 +780,72 @@ static expr_t* parse_unary()
         return (expr_t*)expr;
     }
 
-    return parse_primary();
+    return parse_call();
+}
+
+/*
+ * This function looks hacky and out of place, because it kind of is.
+ * Due to having a series production that parses comma separated expressions already
+ * In order to seperate these binary comma expressions into single expressions for storing as function arguments
+ * We have to traverse the binary tree of comma separated expressions.
+ */
+static void _parse_call_visit_args(expr_t* expr, list_expr_t* args)
+{
+    if (expr->type == EXPR_BINARY)
+    {
+        expr_binary_t* expr_bin = (expr_binary_t*)expr;
+        if (expr_bin->operator.type == TOKEN_COMMA)
+        {
+            _parse_call_visit_args(expr_bin->left, args);
+            _parse_call_visit_args(expr_bin->right, args);
+
+            // Now we want to free the comma binary expression since its of no use anymore, but expr_free() will also free
+            // its left and right, which we still want to store.
+            // this means we will have to use a raw free() call.
+            free(expr_bin);
+            return;
+        }
+    }
+
+    list_expr_push(args, expr);
+}
+
+static expr_t* parse_call()
+{
+    expr_t* expr = parse_primary();
+
+    token_t tok = get_token(false);
+    while (tok.type == TOKEN_LEFT_PAREN)
+    {
+        curr++;
+
+        list_expr_t args = { 0 };
+        tok = get_token(false);
+        if (tok.type != TOKEN_RIGHT_PAREN)
+        {
+            expr_t* eargs = parse_expr();
+            _parse_call_visit_args(eargs, &args);
+        }
+
+        tok = get_token(false);
+        if (tok.type != TOKEN_RIGHT_PAREN)
+        {
+            printf("PARSER ERROR: Expected ')' after arguments.\n");
+            list_expr_free(&args);
+            expr_free(expr);
+            return NULL;
+        }
+        curr++;
+
+        expr_call_t* call = new_call_expr();
+        call->callee = expr;
+        call->args = args;
+        call->closing_paren = tok;
+
+        expr = (expr_t*)call;
+    }
+
+    return expr;
 }
 
 static expr_t* parse_primary()

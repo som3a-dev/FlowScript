@@ -77,6 +77,14 @@ void expr_free(expr_t* expr)
     }
     break;
 
+    case EXPR_CALL:
+    {
+        expr_call_t* e = (expr_call_t*)expr;
+        expr_free(e->callee);
+        list_expr_free(&(e->args));
+    }
+    break;
+
     default:
         assert(false);
     }

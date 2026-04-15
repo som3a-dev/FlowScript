@@ -8,6 +8,7 @@
 #ifndef _EXPRESSION_H
 #define _EXPRESSION_H
 
+#include "list.h"
 #include "object.h"
 #include "scanner.h"
 
@@ -18,6 +19,7 @@ typedef enum
     EXPR_GROUPING,
     EXPR_LITERAL,
     EXPR_UNARY,
+    EXPR_CALL, // Function call
     EXPR_VAR,
     EXPR_LOGICAL
 } expr_type_t;
@@ -60,6 +62,15 @@ typedef struct
     token_t operator;
     expr_t* right;
 } expr_unary_t;
+
+typedef struct
+{
+    expr_t e;
+
+    expr_t* callee;
+    token_t closing_paren;
+    list_expr_t args;
+} expr_call_t;
 
 typedef struct
 {

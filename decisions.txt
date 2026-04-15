@@ -1,6 +1,6 @@
 Although FlowScript is based heavily on lox, it is not lox, and does not necessarily adhere to its specification.
 This document will aim to point out all the design decisions FlowScript took that stray away from lox
-Decisions marked as (REVISE) should and probably will be revisited in the future
+Decisions marked as (REVISE) take priority in terms of being revisited in the future
 
 
 Logical Operators:
@@ -9,3 +9,6 @@ Logical Operators:
 
     - In FlowScript, logical operators don't do short ciruiting, so for a statement like "if (false and true)", FlowScript checks both operands
     and doesn't short circuit after seeing the first operand is false (REVISE)
+
+Functions:
+    - In FlowScript, functions do not have a maximum amount of arguments, unlike lox, which has a maximum of 255.
