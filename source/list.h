@@ -8,8 +8,11 @@
 #ifndef _LIST_H
 #define _LIST_H
 
+#include <stdbool.h>
+
 typedef struct stmt_t stmt_t;
 typedef struct expr_t expr_t;
+typedef struct object_t object_t;
 
 /*
  * This is a list of statements (like token_list_t), not a list
@@ -27,12 +30,23 @@ typedef struct
     int len;
 } list_expr_t;
 
-void list_stmt_push(list_stmt_t* list, stmt_t* stmt);
+// Holds shallow, by value copies, doesn't necessarily own lifetime
+typedef struct
+{
+    object_t* objects;
+    int len;
+} list_object_t;
+
+void list_stmt_push(list_stmt_t* list, const stmt_t* stmt);
 void list_stmt_print(const list_stmt_t* list);
 void list_stmt_free(list_stmt_t* list);
 
-void list_expr_push(list_expr_t* list, expr_t* stmt);
+void list_expr_push(list_expr_t* list, const expr_t* expr);
 void list_expr_print(const list_expr_t* list);
 void list_expr_free(list_expr_t* list);
+
+void list_object_push(list_object_t* list, object_t obj);
+void list_object_print(const list_object_t* list);
+void list_object_free(list_object_t* list, bool free_objects);
 
 #endif

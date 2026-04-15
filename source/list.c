@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void list_stmt_push(list_stmt_t* list, stmt_t* stmt)
+void list_stmt_push(list_stmt_t* list, const stmt_t* stmt)
 {
     assert(list);
     if (!stmt)
@@ -33,7 +33,7 @@ void list_stmt_push(list_stmt_t* list, stmt_t* stmt)
         list->stmts = malloc(sizeof(stmt_t*) * list->len);
     }
 
-    list->stmts[list->len - 1] = stmt;
+    list->stmts[list->len - 1] = (stmt_t*)stmt;
 }
 
 void list_stmt_print(const list_stmt_t* list)
@@ -60,7 +60,7 @@ void list_stmt_free(list_stmt_t* list)
     free(list->stmts);
 }
 
-void list_expr_push(list_expr_t* list, expr_t* expr)
+void list_expr_push(list_expr_t* list, const expr_t* expr)
 {
     assert(list);
     if (!expr)
@@ -79,7 +79,7 @@ void list_expr_push(list_expr_t* list, expr_t* expr)
         list->exprs = malloc(sizeof(expr_t*) * list->len);
     }
 
-    list->exprs[list->len - 1] = expr;
+    list->exprs[list->len - 1] = (expr_t*)expr;
 }
 
 void list_expr_print(const list_expr_t* list)
@@ -104,4 +104,47 @@ void list_expr_free(list_expr_t* list)
     }
 
     free(list->exprs);
+}
+
+void list_object_push(list_object_t* list, object_t obj)
+{
+    assert(list);
+
+    list->len++;
+
+    if (list->objects)
+    {
+        list->objects = realloc(list->objects, sizeof(object_t) * list->len);
+    }
+    else
+    {
+        list->objects = malloc(sizeof(object_t) * list->len);
+    }
+
+    list->objects[list->len - 1] = obj;
+}
+
+void list_object_print(const list_object_t* list)
+{
+    assert(list);
+
+    for (int i = 0; i < list->len; i++)
+    {
+        object_print(&(list->objects[i]));
+    }
+}
+
+void list_object_free(list_object_t* list, bool free_objects)
+{
+    assert(list);
+
+    if (free_objects)
+    {
+        for (int i = 0; i < list->len; i++)
+        {
+            object_free(&(list->objects[i]));
+        }
+    }
+
+    free(list->objects);
 }

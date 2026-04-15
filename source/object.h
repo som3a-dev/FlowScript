@@ -19,7 +19,7 @@ typedef enum
     OBJECT_NIL
 } object_type_t;
 
-typedef struct
+typedef struct object_t
 {
     object_type_t type;
     union
