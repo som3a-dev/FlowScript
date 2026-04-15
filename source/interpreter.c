@@ -15,6 +15,8 @@
 
 static void interpret_stmt(const stmt_t* stmt, const char** out_err);
 static object_t interpret_expr(const expr_t* expr, const char** out_err);
+static object_t interpret_function_call(object_t* callee, list_object_t* args, const char** out_err);
+
 
 static environment_t env = { 0 };
 
@@ -31,6 +33,7 @@ void destroy_interpreter()
 
 void interpret(const list_stmt_t* stmts)
 {
+
     const char* err = NULL;
     for (int i = 0; i < stmts->len; i++)
     {
@@ -81,6 +84,10 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
     {
         const stmt_expr_t* s = (stmt_expr_t*)stmt;
         object_t obj = interpret_expr(s->expr, &err);
+        if (err)
+        {
+            break;
+        }
         if (obj.type != _OBJECT_INVALID)
         {
             object_free(&obj);
@@ -191,6 +198,11 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
     }
     break;
     }
+
+    if (err && out_err)
+    {
+        *out_err = err;
+    }
 }
 
 static object_t interpret_expr(const expr_t* expr, const char** out_err)
@@ -241,6 +253,9 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         }
 
         list_object_print(&args);
+
+        obj = interpret_function_call(&callee, &args, &err);
+
         list_object_free(&args, true);
     }
     exit_expr_call:
@@ -575,4 +590,34 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         return (object_t) { 0 };
     }
     return obj;
+}
+
+static object_t interpret_function_call(object_t* callee, list_object_t* args, const char** out_err)
+{
+    assert(callee);
+    assert(args);
+    assert(out_err);
+
+    if (callee->type != OBJECT_CALLABLE)
+    {
+        *out_err = "RUNTIME ERROR: Only functions and classes can be called.";
+        return (object_t) { 0 };
+    }
+
+    const callable_data_t* callable = (const callable_data_t*)(&(callee->val));
+    if (callable->arity != args->len)
+    {
+        *out_err = "RUNTIME ERROR: Incorrect number of arguments provided.";
+        return (object_t) { 0 };
+    }
+
+    assert(callable->call);
+    return callable->call(args);
+}
+
+#ifdef _WIN32
+static bool freq_initialized = false;
+static LARGE_INTEGER freq;
+#endif
+
 }
