@@ -12,18 +12,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 static void interpret_stmt(const stmt_t* stmt, const char** out_err);
 static object_t interpret_expr(const expr_t* expr, const char** out_err);
 static object_t interpret_function_call(object_t* callee, list_object_t* args, const char** out_err);
 
+static object_t fsstd_clock(list_object_t* args);
 
 static environment_t env = { 0 };
+static environment_t globals = { 0 };
 
 void init_interpreter()
 {
     environment_destroy(&env);
-    environment_init(&env, NULL);
+    environment_destroy(&globals);
+
+    environment_init(&globals, NULL);
+    {
+        callable_data_t func = { 0 };
+        func.arity = 0;
+        func.call = fsstd_clock;
+
+        object_t obj = { 0 };
+        obj.type = OBJECT_CALLABLE;
+        obj.val.call = func;
+
+        environment_define(&globals, "clock", &obj);
+    }
+
+    env = globals;
 }
 
 void destroy_interpreter()
@@ -620,4 +642,28 @@ static bool freq_initialized = false;
 static LARGE_INTEGER freq;
 #endif
 
+static object_t fsstd_clock(list_object_t* args)
+{
+    (void)args;
+
+    object_t ret = { 0 };
+    ret.type = OBJECT_NUMBER;
+
+#ifdef _WIN32
+    if (!freq_initialized)
+    {
+        QueryPerformanceFrequency(&freq);
+    }
+
+    LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+
+    ret.val.num = (float)(now.QuadPart) / freq.QuadPart;
+#else
+    struct timespec _t;
+    clock_gettime(CLOCK_MONOTONIC, &_t);
+    ret.val.num = _t.tv_sec * 1000 + lround(_t.tv_nsec / 1e6);
+#endif
+
+    return ret;
 }
