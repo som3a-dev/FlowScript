@@ -49,7 +49,6 @@ void destroy_interpreter()
 
 void interpret(const list_stmt_t* stmts)
 {
-
     const char* err = NULL;
     for (int i = 0; i < stmts->len; i++)
     {
@@ -127,7 +126,10 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
             }
         }
 
-        environment_define(&env, decl->name.lexeme, &val);
+        if (!environment_define(&env, decl->name.lexeme, &val))
+        {
+            err = "Variable with this name already exists.";
+        }
         object_free(&val);
     }
     break;

@@ -27,7 +27,7 @@ void environment_init(environment_t* env, environment_t* enclosing);
 void environment_destroy(environment_t* env);
 
 object_t environment_get(const environment_t* env, const char* name);
-void environment_define(environment_t* env, const char* name, const object_t* val);
+bool environment_define(environment_t* env, const char* name, const object_t* val);
 void environment_assign(environment_t* env, const char* name, const object_t* val);
 
 #endif

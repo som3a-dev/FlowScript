@@ -80,7 +80,7 @@ not_found:
     return obj;
 }
 
-void environment_define(environment_t* env, const char* name, const object_t* val)
+bool environment_define(environment_t* env, const char* name, const object_t* val)
 {
     uint32_t index = hash(name) % env->vals_count;
 
@@ -88,6 +88,11 @@ void environment_define(environment_t* env, const char* name, const object_t* va
 
     if (e->name)
     {
+        if (strcmp(e->name, name) == 0)
+        {
+            // Already defined
+            return false;
+        }
         // LINEAR PROBING
         for (int i = index + 1; i < env->vals_count; i++)
         {
@@ -100,14 +105,14 @@ void environment_define(environment_t* env, const char* name, const object_t* va
 
         // No empty spot found, resize and retry
         environment_resize(env, env->vals_count * 2);
-        environment_define(env, name, val);
-        return;
+        return environment_define(env, name, val);
     }
 
 define_entry:
     e->name = malloc(sizeof(char) * (strlen(name) + 1));
     strcpy(e->name, name);
     e->val = object_copy(val);
+    return true;
 }
 
 void environment_assign(environment_t* env, const char* name, const object_t* val)
