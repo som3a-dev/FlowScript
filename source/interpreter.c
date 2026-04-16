@@ -7,6 +7,7 @@
 
 #include "interpreter.h"
 #include "environment.h"
+#include "gc.h"
 #include "std.h"
 
 #include <assert.h>
@@ -14,48 +15,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Linked list of objects the GC tracks, So all objects
-typedef struct gc_object_t
-{
-    object_t* obj;
-    struct gc_object_t* next;
-} gc_object_t;
-
 static void interpret_stmt(const stmt_t* stmt, const char** out_err);
 static object_t* interpret_expr(const expr_t* expr, const char** out_err);
 static object_t* interpret_function_call(object_t* callee, list_object_t* args, const char** out_err);
 
 static environment_t env = { 0 };
 static environment_t globals = { 0 };
-
-static gc_object_t* gc_obj_list = NULL;
-
-static object_t* new_object()
-{
-    object_t* obj = calloc(1, sizeof(object_t));
-
-    // Add to GC list of objects
-    gc_object_t* new_gc_obj = calloc(1, sizeof(gc_object_t));
-    new_gc_obj->obj = obj;
-    new_gc_obj->next = NULL;
-
-    if (gc_obj_list)
-    {
-        gc_object_t* gc_obj = gc_obj_list;
-        while (gc_obj && gc_obj->next)
-        {
-            gc_obj = gc_obj->next;
-        }
-
-        gc_obj->next = new_gc_obj;
-    }
-    else
-    {
-        gc_obj_list = new_gc_obj;
-    }
-
-    return obj;
-}
 
 void init_interpreter()
 {
@@ -78,81 +43,10 @@ void init_interpreter()
     env = globals;
 }
 
-static void free_objects()
-{
-    gc_object_t* gc_obj = gc_obj_list;
-    while (gc_obj)
-    {
-        gc_object_t* next = gc_obj->next;
-
-//        printf("%p\n", gc_obj->obj);
-        object_free(gc_obj->obj);
-        free(gc_obj->obj);
-        free(gc_obj);
-        gc_obj = next;
-    }
-}
-
 void destroy_interpreter()
 {
-    free_objects();
+    gc_free_objects();
     environment_destroy(&env);
-}
-
-static void mark_objects(environment_t* e)
-{
-    if (!e)
-    {
-        return;
-    }
-
-    for (int i = 0; i < e->vals_count; i++)
-    {
-        environment_entry_t* entry = e->vals + i;
-        if (entry->val)
-        {
-            entry->val->marked = true;
-        }
-    }
-
-    mark_objects(e->enclosing);
-}
-
-static void reset_object_marks()
-{
-    gc_object_t* gc_obj = gc_obj_list;
-    while (gc_obj)
-    {
-        if (gc_obj->obj)
-        {
-            gc_obj->obj->marked = false;
-        }
-        gc_obj = gc_obj->next;
-    }
-}
-
-static void sweep()
-{
-    gc_object_t* gc_obj = gc_obj_list;
-    while (gc_obj)
-    {
-        if (gc_obj->obj)
-        {
-            if (gc_obj->obj->marked)
-            {
-                //                printf("Accessible %p\n", gc_obj->obj);
-            }
-            else
-            {
-                //                printf("Not Accessible %p\n", gc_obj->obj);
-                object_free(gc_obj->obj);
-                free(gc_obj->obj);
-                gc_obj->obj = NULL;
-            }
-        }
-
-        gc_obj = gc_obj->next;
-    }
 }
 
 void interpret(const list_stmt_t* stmts)
@@ -167,9 +61,7 @@ void interpret(const list_stmt_t* stmts)
             break;
         }
 
-        reset_object_marks();
-        mark_objects(&env);
-        sweep();
+        gc_run(&env);
     }
 }
 
@@ -220,7 +112,7 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
 
         if (!val)
         {
-            val = new_object();
+            val = gc_new_object();
             val->type = OBJECT_NIL;
         }
 
@@ -330,7 +222,7 @@ static object_t* interpret_expr(const expr_t* expr, const char** out_err)
     }
 
     const char* err = NULL;
-    object_t* obj = new_object();
+    object_t* obj = gc_new_object();
 
     switch (expr->type)
     {

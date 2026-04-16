@@ -26,6 +26,7 @@ set(SOURCES
   source/statement.c
   source/list.c
   source/std.c
+  source/gc.c
 )
 
 add_compile_definitions(USE_NEW_CACHE _CRT_SECURE_NO_WARNINGS)
