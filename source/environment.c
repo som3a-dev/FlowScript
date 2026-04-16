@@ -30,6 +30,10 @@ void environment_destroy(environment_t* env)
 {
     if (env->vals)
     {
+        for (int i = 0; i < env->vals_count; i++)
+        {
+            free(env->vals[i].name);
+        }
         free(env->vals);
         env->vals = NULL;
     }
