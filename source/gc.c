@@ -7,6 +7,7 @@
 
 #include "gc.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 static gc_object_t* gc_obj_list = NULL;
@@ -20,22 +21,39 @@ object_t* gc_new_object()
     object_t* obj = calloc(1, sizeof(object_t));
 
     // Add to GC list of objects
-    gc_object_t* new_gc_obj = calloc(1, sizeof(gc_object_t));
-    new_gc_obj->obj = obj;
-    new_gc_obj->next = NULL;
-
     if (gc_obj_list)
     {
+        gc_object_t* prev_gc_obj = NULL;
         gc_object_t* gc_obj = gc_obj_list;
-        while (gc_obj && gc_obj->next)
+        while (true)
         {
+            if (!gc_obj)
+            {
+                break;
+            }
+
+            if (gc_obj->obj == NULL)
+            {
+                // Found empty spot, return early
+                gc_obj->obj = obj;
+                return obj;
+            }
+
+            prev_gc_obj = gc_obj;
             gc_obj = gc_obj->next;
         }
 
-        gc_obj->next = new_gc_obj;
+        // Didn't find an empty spot, push to the end
+        gc_object_t* new_gc_obj = calloc(1, sizeof(gc_object_t));
+        new_gc_obj->obj = obj;
+        new_gc_obj->next = NULL;
+        prev_gc_obj->next = new_gc_obj;
     }
     else
     {
+        gc_object_t* new_gc_obj = calloc(1, sizeof(gc_object_t));
+        new_gc_obj->obj = obj;
+        new_gc_obj->next = NULL;
         gc_obj_list = new_gc_obj;
     }
 
@@ -56,7 +74,6 @@ void gc_free_objects()
     {
         gc_object_t* next = gc_obj->next;
 
-        //        printf("%p\n", gc_obj->obj);
         object_free(gc_obj->obj);
         free(gc_obj->obj);
         free(gc_obj);
@@ -103,13 +120,8 @@ void gc_sweep()
     {
         if (gc_obj->obj)
         {
-            if (gc_obj->obj->marked)
+            if (gc_obj->obj->marked == false)
             {
-                //                printf("Accessible %p\n", gc_obj->obj);
-            }
-            else
-            {
-                //                printf("Not Accessible %p\n", gc_obj->obj);
                 object_free(gc_obj->obj);
                 free(gc_obj->obj);
                 gc_obj->obj = NULL;

@@ -222,7 +222,7 @@ static object_t* interpret_expr(const expr_t* expr, const char** out_err)
     }
 
     const char* err = NULL;
-    object_t* obj = gc_new_object();
+    object_t* obj = NULL;
 
     switch (expr->type)
     {
@@ -280,6 +280,7 @@ static object_t* interpret_expr(const expr_t* expr, const char** out_err)
     case EXPR_LOGICAL:
     {
         expr_logical_t* e = (expr_logical_t*)expr;
+        obj = gc_new_object();
         obj->type = OBJECT_BOOL;
 
         object_t* left = interpret_expr(e->left, &err);
@@ -331,6 +332,7 @@ static object_t* interpret_expr(const expr_t* expr, const char** out_err)
     case EXPR_LITERAL:
     {
         expr_literal_t* e = (expr_literal_t*)expr;
+        obj = gc_new_object();
         obj->type = e->type;
 
         switch (obj->type)
@@ -369,6 +371,7 @@ static object_t* interpret_expr(const expr_t* expr, const char** out_err)
     case EXPR_UNARY:
     {
         expr_unary_t* e = (expr_unary_t*)expr;
+        obj = gc_new_object();
         object_t* right = interpret_expr(e->right, &err);
         if (err)
         {
@@ -408,6 +411,7 @@ static object_t* interpret_expr(const expr_t* expr, const char** out_err)
     case EXPR_BINARY:
     {
         expr_binary_t* e = (expr_binary_t*)expr;
+        obj = gc_new_object();
         object_t* left = interpret_expr(e->left, NULL);
         object_t* right = interpret_expr(e->right, NULL);
         if (err)
