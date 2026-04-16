@@ -12,3 +12,6 @@ Logical Operators:
 
 Functions:
     - In FlowScript, functions do not have a maximum amount of arguments, unlike lox, which has a maximum of 255.
+
+Additions:
+    - FlowScript has syntax for comma seperated expressions outside of function arguments, Which lox doesn't support.
