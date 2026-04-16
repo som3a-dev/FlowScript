@@ -15,11 +15,19 @@
 #include <string.h>
 
 static void interpret_stmt(const stmt_t* stmt, const char** out_err);
-static object_t interpret_expr(const expr_t* expr, const char** out_err);
-static object_t interpret_function_call(object_t* callee, list_object_t* args, const char** out_err);
+static object_t* interpret_expr(const expr_t* expr, const char** out_err);
+static object_t* interpret_function_call(object_t* callee, list_object_t* args, const char** out_err);
 
 static environment_t env = { 0 };
 static environment_t globals = { 0 };
+
+
+static object_t* new_object()
+{
+    object_t* obj = calloc(1, sizeof(object_t));
+
+    return obj;
+}
 
 void init_interpreter()
 {
@@ -32,11 +40,11 @@ void init_interpreter()
         func.arity = 0;
         func.call = fsstd_clock;
 
-        object_t obj = { 0 };
-        obj.type = OBJECT_CALLABLE;
-        obj.val.call = func;
+        /*        object_t obj = { 0 };
+                obj->type = OBJECT_CALLABLE;
+                obj->val.call = func; */
 
-        environment_define(&globals, "clock", &obj);
+        //        environment_define(&globals, "clock", &obj);
     }
 
     env = globals;
@@ -80,57 +88,42 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
     case STMT_PRINT:
     {
         const stmt_print_t* s = (stmt_print_t*)stmt;
-        object_t obj = interpret_expr(s->expr, &err);
-        if (obj.type != _OBJECT_INVALID)
-        {
-            object_print(&obj);
-
-            // TODO(omar): maybe interpret_expr() should return a copy of the object in the case of a var expression
-            // so we don't have to do this
-            if (s->expr->type != EXPR_VAR)
-            {
-                object_free(&obj);
-            }
-        }
+        object_t* obj = interpret_expr(s->expr, &err);
+        object_print(obj);
     }
     break;
 
     case STMT_EXPR:
     {
         const stmt_expr_t* s = (stmt_expr_t*)stmt;
-        object_t obj = interpret_expr(s->expr, &err);
-        if (err)
-        {
-            break;
-        }
-        if (obj.type != _OBJECT_INVALID)
-        {
-            object_free(&obj);
-        }
+        interpret_expr(s->expr, &err);
     }
     break;
 
     case STMT_VAR:
     {
         const stmt_var_t* decl = (stmt_var_t*)stmt;
-        object_t val = { 0 };
-        val.type = OBJECT_NIL;
+        object_t* val = NULL;
         if (decl->expr)
         {
             val = interpret_expr(decl->expr, &err);
             if (err)
             {
                 // TODO(omar): why does an invalid object not give us an error
-                object_free(&val);
                 return;
             }
         }
 
-        if (!environment_define(&env, decl->name.lexeme, &val))
+        if (!val)
+        {
+            val = new_object();
+            val->type = OBJECT_NIL;
+        }
+
+        if (!environment_define(&env, decl->name.lexeme, val))
         {
             err = "Variable with this name already exists.";
         }
-        object_free(&val);
     }
     break;
 
@@ -151,6 +144,7 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
             }
         }
 
+        // TODO(omar): remove this when we have a GC
         environment_destroy(&env);
         env = prev_env;
     }
@@ -159,14 +153,14 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
     case STMT_IF:
     {
         const stmt_if_t* s = (stmt_if_t*)stmt;
-        object_t condition = interpret_expr(s->condition, &err);
+        object_t* condition = interpret_expr(s->condition, &err);
         if (err)
         {
             *out_err = err;
             return;
         }
 
-        if (object_is_truthy(&condition))
+        if (object_is_truthy(condition))
         {
             interpret_stmt(s->then_branch, &err);
             if (err)
@@ -191,7 +185,7 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
     {
         stmt_while_t* s = (stmt_while_t*)stmt;
 
-        object_t condition;
+        object_t* condition = NULL;
         do
         {
             condition = interpret_expr(s->condition, &err);
@@ -207,12 +201,7 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
                 *out_err = err;
                 return;
             }
-
-            if (s->condition->type != EXPR_VAR)
-            {
-                object_free(&condition);
-            }
-        } while (object_is_truthy(&condition));
+        } while (object_is_truthy(condition));
     }
     break;
     }
@@ -223,10 +212,8 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
     }
 }
 
-static object_t interpret_expr(const expr_t* expr, const char** out_err)
+static object_t* interpret_expr(const expr_t* expr, const char** out_err)
 {
-    object_t obj = { 0 };
-    obj.type = _OBJECT_INVALID;
 
     if (!expr)
     {
@@ -235,10 +222,11 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
             *out_err = "Invalid Expression";
         }
 
-        return obj;
+        return NULL;
     }
 
     const char* err = NULL;
+    object_t* obj = new_object();
 
     switch (expr->type)
     {
@@ -246,11 +234,10 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
     case EXPR_CALL:
     {
         expr_call_t* call = (expr_call_t*)expr;
-        object_t callee = interpret_expr(call->callee, &err);
+        object_t* callee = interpret_expr(call->callee, &err);
         if (err)
         {
             *out_err = err;
-            object_free(&callee);
             break;
         }
 
@@ -258,12 +245,11 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         for (int i = 0; i < call->args.len; i++)
         {
             expr_t* arg = call->args.exprs[i];
-            object_t val = interpret_expr(arg, &err);
+            object_t* val = interpret_expr(arg, &err);
             if (err)
             {
                 *out_err = err;
-                list_object_free(&args, true);
-                object_free(&callee);
+                list_object_free(&args);
                 goto exit_expr_call;
             }
 
@@ -272,9 +258,9 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
 
         list_object_print(&args);
 
-        obj = interpret_function_call(&callee, &args, &err);
+        obj = interpret_function_call(callee, &args, &err);
 
-        list_object_free(&args, true);
+        list_object_free(&args);
     }
     exit_expr_call:
         break;
@@ -283,14 +269,14 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
     {
         expr_assign_t* e = (expr_assign_t*)expr;
 
-        object_t val = interpret_expr(e->val, &err);
+        object_t* val = interpret_expr(e->val, &err);
         if (err)
         {
             *out_err = err;
             break;
         }
 
-        environment_assign(&env, e->name.lexeme, &val);
+        environment_assign(&env, e->name.lexeme, val);
         obj = val;
     }
     break;
@@ -298,31 +284,31 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
     case EXPR_LOGICAL:
     {
         expr_logical_t* e = (expr_logical_t*)expr;
-        obj.type = OBJECT_BOOL;
+        obj->type = OBJECT_BOOL;
 
-        object_t left = interpret_expr(e->left, &err);
+        object_t* left = interpret_expr(e->left, &err);
         if (err)
         {
             *out_err = err;
             break;
         }
 
-        /*        if (e->operator.type == TOKEN_OR)
+        /*        if (e->operator->type == TOKEN_OR)
                 {
                     if (object_is_truthy(&left))
                     {
-                        obj.val.boolean = true;
+                        obj->val.boolean = true;
                     }
                 }
-                else if (e->operator.type == TOKEN_AND)
+                else if (e->operator->type == TOKEN_AND)
                 {
                     if (!object_is_truthy(&left))
                     {
-                        obj.val.boolean = false;
+                        obj->val.boolean = false;
                     }
                 } */
 
-        object_t right = interpret_expr(e->right, &err);
+        object_t* right = interpret_expr(e->right, &err);
         if (err)
         {
             *out_err = err;
@@ -331,26 +317,17 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
 
         if (e->operator.type == TOKEN_OR)
         {
-            if (object_is_truthy(&left) || object_is_truthy(&right))
+            if (object_is_truthy(left) || object_is_truthy(right))
             {
-                obj.val.boolean = true;
+                obj->val.boolean = true;
             }
         }
         else if (e->operator.type == TOKEN_AND)
         {
-            if (object_is_truthy(&left) && object_is_truthy(&right))
+            if (object_is_truthy(left) && object_is_truthy(right))
             {
-                obj.val.boolean = true;
+                obj->val.boolean = true;
             }
-        }
-
-        if (e->left->type != EXPR_VAR)
-        {
-            object_free(&left);
-        }
-        if (e->right->type != EXPR_VAR)
-        {
-            object_free(&right);
         }
     }
     break;
@@ -358,26 +335,26 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
     case EXPR_LITERAL:
     {
         expr_literal_t* e = (expr_literal_t*)expr;
-        obj.type = e->type;
+        obj->type = e->type;
 
-        switch (obj.type)
+        switch (obj->type)
         {
         case OBJECT_STRING:
         {
-            obj.val.str = malloc(sizeof(char) * (strlen(e->val.str) + 1));
-            strcpy(obj.val.str, e->val.str);
+            obj->val.str = malloc(sizeof(char) * (strlen(e->val.str) + 1));
+            strcpy(obj->val.str, e->val.str);
         }
         break;
 
         case OBJECT_BOOL:
         {
-            obj.val.boolean = e->val.boolean;
+            obj->val.boolean = e->val.boolean;
         }
         break;
 
         case OBJECT_NUMBER:
         {
-            obj.val.num = e->val.num;
+            obj->val.num = e->val.num;
         }
         break;
 
@@ -396,7 +373,7 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
     case EXPR_UNARY:
     {
         expr_unary_t* e = (expr_unary_t*)expr;
-        object_t right = interpret_expr(e->right, &err);
+        object_t* right = interpret_expr(e->right, &err);
         if (err)
         {
             break;
@@ -406,10 +383,10 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         {
         case TOKEN_MINUS:
         {
-            if (right.type == OBJECT_NUMBER)
+            if (right->type == OBJECT_NUMBER)
             {
-                obj.type = OBJECT_NUMBER;
-                obj.val.num = -(right.val.num);
+                obj->type = OBJECT_NUMBER;
+                obj->val.num = -(right->val.num);
             }
             else
             {
@@ -421,8 +398,8 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
 
         case TOKEN_BANG:
         {
-            obj.type = OBJECT_BOOL;
-            obj.val.boolean = !(object_is_truthy(&right));
+            obj->type = OBJECT_BOOL;
+            obj->val.boolean = !(object_is_truthy(right));
         }
         break;
 
@@ -435,8 +412,8 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
     case EXPR_BINARY:
     {
         expr_binary_t* e = (expr_binary_t*)expr;
-        object_t left = interpret_expr(e->left, NULL);
-        object_t right = interpret_expr(e->right, NULL);
+        object_t* left = interpret_expr(e->left, NULL);
+        object_t* right = interpret_expr(e->right, NULL);
         if (err)
         {
             break;
@@ -446,60 +423,60 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
         {
         case TOKEN_STAR:
         {
-            if ((left.type != right.type) || (left.type != OBJECT_NUMBER))
+            if ((left->type != right->type) || (left->type != OBJECT_NUMBER))
             {
                 err = "Operands must be numbers";
                 break;
             }
 
-            obj.type = OBJECT_NUMBER;
-            obj.val.num = left.val.num * right.val.num;
+            obj->type = OBJECT_NUMBER;
+            obj->val.num = left->val.num * right->val.num;
         }
         break;
 
         case TOKEN_MINUS:
         {
-            if ((left.type != right.type) || (left.type != OBJECT_NUMBER))
+            if ((left->type != right->type) || (left->type != OBJECT_NUMBER))
             {
                 err = "Operands must be numbers";
                 break;
             }
 
-            obj.type = OBJECT_NUMBER;
-            obj.val.num = left.val.num - right.val.num;
+            obj->type = OBJECT_NUMBER;
+            obj->val.num = left->val.num - right->val.num;
         }
         break;
 
         case TOKEN_SLASH:
         {
-            if ((left.type != right.type) || (left.type != OBJECT_NUMBER))
+            if ((left->type != right->type) || (left->type != OBJECT_NUMBER))
             {
                 err = "Operands must be numbers";
                 break;
             }
 
-            obj.type = OBJECT_NUMBER;
-            obj.val.num = left.val.num / right.val.num;
+            obj->type = OBJECT_NUMBER;
+            obj->val.num = left->val.num / right->val.num;
         }
         break;
 
         case TOKEN_PLUS:
         {
-            if ((left.type == OBJECT_NUMBER) && (right.type == OBJECT_NUMBER))
+            if ((left->type == OBJECT_NUMBER) && (right->type == OBJECT_NUMBER))
             {
-                obj.type = OBJECT_NUMBER;
-                obj.val.num = left.val.num + right.val.num;
+                obj->type = OBJECT_NUMBER;
+                obj->val.num = left->val.num + right->val.num;
             }
             else if (
-                (left.type == OBJECT_STRING) && (right.type == OBJECT_STRING))
+                (left->type == OBJECT_STRING) && (right->type == OBJECT_STRING))
             {
-                size_t str_len = strlen(left.val.str) + strlen(left.val.str);
+                size_t str_len = strlen(left->val.str) + strlen(left->val.str);
                 char* str = malloc(sizeof(char) * (str_len + 1));
 
-                snprintf(str, str_len + 1, "%s%s", left.val.str, right.val.str);
+                snprintf(str, str_len + 1, "%s%s", left->val.str, right->val.str);
 
-                obj.type = OBJECT_STRING;
-                obj.val.str = str;
+                obj->type = OBJECT_STRING;
+                obj->val.str = str;
             }
             else
             {
@@ -511,78 +488,69 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
 
         case TOKEN_GREATER:
         {
-            if ((left.type != right.type) || (left.type != OBJECT_NUMBER))
+            if ((left->type != right->type) || (left->type != OBJECT_NUMBER))
             {
                 err = "Operands must be numbers";
                 break;
             }
 
-            obj.type = OBJECT_BOOL;
-            obj.val.boolean = left.val.num > right.val.num;
+            obj->type = OBJECT_BOOL;
+            obj->val.boolean = left->val.num > right->val.num;
         }
         break;
 
         case TOKEN_LESS:
         {
-            if ((left.type != right.type) || (left.type != OBJECT_NUMBER))
+            if ((left->type != right->type) || (left->type != OBJECT_NUMBER))
             {
                 err = "Operands must be numbers";
                 break;
             }
 
-            obj.type = OBJECT_BOOL;
-            obj.val.boolean = left.val.num < right.val.num;
+            obj->type = OBJECT_BOOL;
+            obj->val.boolean = left->val.num < right->val.num;
         }
         break;
 
         case TOKEN_GREATER_EQUAL:
         {
-            if ((left.type != right.type) || (left.type != OBJECT_NUMBER))
+            if ((left->type != right->type) || (left->type != OBJECT_NUMBER))
             {
                 err = "Operands must be numbers";
                 break;
             }
 
-            obj.type = OBJECT_BOOL;
-            obj.val.boolean = left.val.num >= right.val.num;
+            obj->type = OBJECT_BOOL;
+            obj->val.boolean = left->val.num >= right->val.num;
         }
         break;
 
         case TOKEN_LESS_EQUAL:
         {
-            if ((left.type != right.type) || (left.type != OBJECT_NUMBER))
+            if ((left->type != right->type) || (left->type != OBJECT_NUMBER))
             {
                 err = "Operands must be numbers";
                 break;
             }
 
-            obj.type = OBJECT_BOOL;
-            obj.val.boolean = left.val.num <= right.val.num;
+            obj->type = OBJECT_BOOL;
+            obj->val.boolean = left->val.num <= right->val.num;
         }
         break;
 
         case TOKEN_BANG_EQUAL:
         {
-            obj.type = OBJECT_BOOL;
-            obj.val.boolean = !object_is_equal(&left, &right);
+            obj->type = OBJECT_BOOL;
+            obj->val.boolean = !object_is_equal(left, right);
         }
         break;
 
         case TOKEN_EQUAL_EQUAL:
         {
-            obj.type = OBJECT_BOOL;
-            obj.val.boolean = object_is_equal(&left, &right);
+            obj->type = OBJECT_BOOL;
+            obj->val.boolean = object_is_equal(left, right);
         }
         break;
-        }
-
-        if (e->left->type != EXPR_VAR)
-        {
-            object_free(&left);
-        }
-        if (e->right->type != EXPR_VAR)
-        {
-            object_free(&right);
         }
     }
     break;
@@ -604,13 +572,16 @@ static object_t interpret_expr(const expr_t* expr, const char** out_err)
     if (err && out_err)
     {
         *out_err = err;
-        object_free(&obj);
-        return (object_t) { 0 };
+
+        // OBJECT CREATE SHOULD FREE ?
+        //        object_free(obj);
+        return NULL;
     }
+
     return obj;
 }
 
-static object_t interpret_function_call(object_t* callee, list_object_t* args, const char** out_err)
+static object_t* interpret_function_call(object_t* callee, list_object_t* args, const char** out_err)
 {
     assert(callee);
     assert(args);
@@ -619,16 +590,17 @@ static object_t interpret_function_call(object_t* callee, list_object_t* args, c
     if (callee->type != OBJECT_CALLABLE)
     {
         *out_err = "RUNTIME ERROR: Only functions and classes can be called.";
-        return (object_t) { 0 };
+        return NULL;
     }
 
     const callable_data_t* callable = (const callable_data_t*)(&(callee->val));
     if (callable->arity != args->len)
     {
         *out_err = "RUNTIME ERROR: Incorrect number of arguments provided.";
-        return (object_t) { 0 };
+        return NULL;
     }
 
     assert(callable->call);
-    return callable->call(args);
+    //    return callable->call(args);
+    return NULL;
 }

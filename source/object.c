@@ -17,6 +17,7 @@ void object_free(object_t* obj)
     if (obj->type == OBJECT_STRING)
     {
         free(obj->val.str);
+        printf("free\n");
     }
 }
 

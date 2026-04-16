@@ -107,7 +107,7 @@ void list_expr_free(list_expr_t* list)
     free(list->exprs);
 }
 
-void list_object_push(list_object_t* list, object_t obj)
+void list_object_push(list_object_t* list, object_t* obj)
 {
     assert(list);
 
@@ -115,11 +115,11 @@ void list_object_push(list_object_t* list, object_t obj)
 
     if (list->objects)
     {
-        list->objects = realloc(list->objects, sizeof(object_t) * list->len);
+        list->objects = realloc(list->objects, sizeof(object_t*) * list->len);
     }
     else
     {
-        list->objects = malloc(sizeof(object_t) * list->len);
+        list->objects = malloc(sizeof(object_t*) * list->len);
     }
 
     list->objects[list->len - 1] = obj;
@@ -131,21 +131,13 @@ void list_object_print(const list_object_t* list)
 
     for (int i = 0; i < list->len; i++)
     {
-        object_print(&(list->objects[i]));
+        object_print((list->objects[i]));
     }
 }
 
-void list_object_free(list_object_t* list, bool free_objects)
+void list_object_free(list_object_t* list)
 {
     assert(list);
-
-    if (free_objects)
-    {
-        for (int i = 0; i < list->len; i++)
-        {
-            object_free(&(list->objects[i]));
-        }
-    }
 
     free(list->objects);
 }

@@ -30,12 +30,6 @@ void environment_destroy(environment_t* env)
 {
     if (env->vals)
     {
-        for (int i = 0; i < env->vals_count; i++)
-        {
-            free(env->vals[i].name);
-            object_free(&(env->vals[i].val));
-        }
-
         free(env->vals);
         env->vals = NULL;
     }
@@ -43,7 +37,7 @@ void environment_destroy(environment_t* env)
     env->vals_count = 0;
 }
 
-object_t environment_get(const environment_t* env, const char* name)
+object_t* environment_get(const environment_t* env, const char* name)
 {
     uint32_t index = hash(name) % env->vals_count;
 
@@ -75,12 +69,10 @@ not_found:
         return environment_get(env->enclosing, name);
     }
 
-    object_t obj = { 0 };
-    obj.type = _OBJECT_INVALID;
-    return obj;
+    return NULL;
 }
 
-bool environment_define(environment_t* env, const char* name, const object_t* val)
+bool environment_define(environment_t* env, const char* name, object_t* val)
 {
     uint32_t index = hash(name) % env->vals_count;
 
@@ -111,11 +103,11 @@ bool environment_define(environment_t* env, const char* name, const object_t* va
 define_entry:
     e->name = malloc(sizeof(char) * (strlen(name) + 1));
     strcpy(e->name, name);
-    e->val = object_copy(val);
+    e->val = val;
     return true;
 }
 
-void environment_assign(environment_t* env, const char* name, const object_t* val)
+void environment_assign(environment_t* env, const char* name, object_t* val)
 {
     uint32_t index = hash(name) % env->vals_count;
 
@@ -139,8 +131,7 @@ void environment_assign(environment_t* env, const char* name, const object_t* va
     }
 
 assign_entry:
-    object_free(&(e->val));
-    e->val = object_copy(val);
+    e->val = val;
 }
 
 static void environment_resize(environment_t* env, int new_size)
@@ -156,7 +147,7 @@ static void environment_resize(environment_t* env, int new_size)
 
     for (int i = 0; i < env->vals_count; i++)
     {
-        env->vals[i].val.type = _OBJECT_INVALID;
+        env->vals[i].val = NULL;
     }
 
     if (old_env.vals)
@@ -168,7 +159,7 @@ static void environment_resize(environment_t* env, int new_size)
         {
             if (e->name)
             {
-                environment_define(env, e->name, &(e->val));
+                environment_define(env, e->name, e->val);
             }
 
             e++;

@@ -31,14 +31,14 @@ typedef struct
     int len;
 } list_expr_t;
 
-// Holds shallow, by value copies, doesn't necessarily own lifetime
+// Holds references to objects, doesn't own lifetime
 typedef struct
 {
-    object_t* objects;
+    const object_t** objects;
     int len;
 } list_object_t;
 
-// Holds shallow copies, doesn't own lifetime
+// Holds shallow by value copies, doesn't own lifetime
 typedef struct
 {
     token_t* tokens;
@@ -53,9 +53,9 @@ void list_expr_push(list_expr_t* list, const expr_t* expr);
 void list_expr_print(const list_expr_t* list);
 void list_expr_free(list_expr_t* list);
 
-void list_object_push(list_object_t* list, object_t obj);
+void list_object_push(list_object_t* list, object_t* obj);
 void list_object_print(const list_object_t* list);
-void list_object_free(list_object_t* list, bool free_objects);
+void list_object_free(list_object_t* list);
 
 void list_token_push(list_token_t* list, token_t tok);
 void list_token_free(list_token_t* list);
