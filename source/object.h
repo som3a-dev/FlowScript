@@ -38,6 +38,7 @@ typedef struct object_t
         bool boolean;
         callable_data_t call;
     } val;
+    bool marked; // for the GC
 } object_t;
 
 void object_free(object_t* obj);

@@ -14,6 +14,9 @@
 
 void object_free(object_t* obj)
 {
+    if (!obj)
+        return;
+
     if (obj->type == OBJECT_STRING)
     {
         free(obj->val.str);
