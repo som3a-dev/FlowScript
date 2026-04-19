@@ -38,6 +38,8 @@ typedef struct
 
     int arity;
     object_t* (*call)(list_object_t* args);
+
+    stmt_function_t* declaration; // for user functions
 } callable_data_t;
 
 typedef struct object_t

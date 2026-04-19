@@ -45,3 +45,15 @@ object_t* fsstd_clock(list_object_t* args)
 
     return ret;
 }
+
+object_t* fsstd_call_user_fun(list_object_t* args)
+{
+    object_t* ret = gc_new_object();
+    ret->type = OBJECT_NIL;
+
+    (void)args;
+
+    printf("User function!\n");
+
+    return ret;
+}

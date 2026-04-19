@@ -11,3 +11,4 @@
 // fsstd stands for FlowScript standard
 
 object_t* fsstd_clock(list_object_t* args);
+object_t* fsstd_call_user_fun(list_object_t* args);

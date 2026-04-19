@@ -213,6 +213,8 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
         callable->declaration = s;
         callable->arity = s->params.len;
         callable->call = fsstd_call_user_fun;
+
+        environment_define(&globals, s->name.lexeme, fun);
     }
     break;
     }

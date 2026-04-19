@@ -69,7 +69,7 @@ typedef struct
     stmt_t* body;
 } stmt_while_t;
 
-typedef struct
+typedef struct stmt_function_t // forward declared in object.h
 {
     stmt_t s;
 
