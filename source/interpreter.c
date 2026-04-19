@@ -30,6 +30,7 @@ void init_interpreter()
     environment_init(&globals, NULL);
     {
         callable_data_t func = { 0 };
+        func.type = CALLABLE_NATIVE_FUN;
         func.arity = 0;
         func.call = fsstd_clock;
 

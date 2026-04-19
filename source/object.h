@@ -14,7 +14,7 @@
 
 typedef enum
 {
-    _OBJECT_INVALID, // Don't ever make this not 0, a lot of code depends on it
+    _OBJECT_INVALID, // Don't ever make this not 0, a lot of zeroing out initialization depends on it
     OBJECT_BOOL,
     OBJECT_STRING,
     OBJECT_NUMBER,
@@ -22,6 +22,16 @@ typedef enum
     OBJECT_CALLABLE
 } object_type_t;
 
+typedef enum
+{
+    _CALLABLE_INVALID,
+    CALLABLE_USER_FUN,
+    CALLABLE_NATIVE_FUN
+} callable_type_t;
+
+typedef struct stmt_function_t stmt_function_t;
+
+// This is for just functions for now (we don't have classes and methods)
 typedef struct
 {
     int arity;
