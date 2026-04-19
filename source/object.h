@@ -34,6 +34,8 @@ typedef struct stmt_function_t stmt_function_t;
 // This is for just functions for now (we don't have classes and methods)
 typedef struct
 {
+    callable_type_t type;
+
     int arity;
     object_t* (*call)(list_object_t* args);
 } callable_data_t;
