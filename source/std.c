@@ -7,6 +7,7 @@
 
 #include "std.h"
 #include "gc.h"
+#include "interpreter.h"
 
 #include <stdio.h>
 #include <time.h>
@@ -20,9 +21,10 @@ static bool freq_initialized = false;
 static LARGE_INTEGER freq;
 #endif
 
-object_t* fsstd_clock(list_object_t* args)
+object_t* fsstd_clock(interpreter_state_t* interpreter, list_object_t* args)
 {
     (void)args;
+    (void)interpreter;
 
     object_t* ret = gc_new_object();
     ret->type = OBJECT_NUMBER;
@@ -46,12 +48,13 @@ object_t* fsstd_clock(list_object_t* args)
     return ret;
 }
 
-object_t* fsstd_call_user_fun(list_object_t* args)
+object_t* fsstd_call_user_fun(interpreter_state_t* interpreter, list_object_t* args)
 {
     object_t* ret = gc_new_object();
     ret->type = OBJECT_NIL;
 
     (void)args;
+    (void)interpreter;
 
     printf("User function!\n");
 

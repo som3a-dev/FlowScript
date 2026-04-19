@@ -29,6 +29,7 @@ typedef enum
     CALLABLE_NATIVE_FUN
 } callable_type_t;
 
+typedef struct interpreter_state_t interpreter_state_t;
 typedef struct stmt_function_t stmt_function_t;
 
 // This is for just functions for now (we don't have classes and methods)
@@ -37,7 +38,7 @@ typedef struct
     callable_type_t type;
 
     int arity;
-    object_t* (*call)(list_object_t* args);
+    object_t* (*call)(interpreter_state_t* interpreter, list_object_t* args);
 
     stmt_function_t* declaration; // for user functions
 } callable_data_t;
