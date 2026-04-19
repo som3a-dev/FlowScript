@@ -25,7 +25,7 @@ typedef enum
 typedef struct
 {
     int arity;
-    object_t (*call)(list_object_t* args);
+    object_t* (*call)(list_object_t* args);
 } callable_data_t;
 
 typedef struct object_t

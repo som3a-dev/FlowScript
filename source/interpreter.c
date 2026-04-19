@@ -33,11 +33,11 @@ void init_interpreter()
         func.arity = 0;
         func.call = fsstd_clock;
 
-        /*        object_t obj = { 0 };
-                obj->type = OBJECT_CALLABLE;
-                obj->val.call = func; */
+        object_t* obj = gc_new_object();
+        obj->type = OBJECT_CALLABLE;
+        obj->val.call = func;
 
-        //        environment_define(&globals, "clock", &obj);
+        environment_define(&globals, "clock", obj);
     }
 
     env = globals;
@@ -198,6 +198,20 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
                 return;
             }
         } while (object_is_truthy(condition));
+    }
+    break;
+
+    case STMT_FUNCTION:
+    {
+        stmt_function_t* s = (stmt_function_t*)stmt;
+
+        object_t* fun = gc_new_object();
+        fun->type = OBJECT_CALLABLE;
+
+        callable_data_t* callable = &(fun->val.call);
+        callable->declaration = s;
+        callable->arity = s->params.len;
+        callable->call = fsstd_call_user_fun;
     }
     break;
     }
@@ -601,6 +615,5 @@ static object_t* interpret_function_call(object_t* callee, list_object_t* args, 
     }
 
     assert(callable->call);
-    //    return callable->call(args);
-    return NULL;
+    return callable->call(args);
 }
