@@ -618,5 +618,8 @@ static object_t* interpret_function_call(object_t* callee, list_object_t* args, 
     }
 
     assert(callable->call);
-    return callable->call(args);
+    object_t* ret = callable->call(args);
+    assert(ret);
+
+    return ret;
 }
