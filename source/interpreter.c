@@ -6,7 +6,6 @@
  */
 
 #include "interpreter.h"
-#include "environment.h"
 #include "gc.h"
 #include "std.h"
 
@@ -19,15 +18,14 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err);
 static object_t* interpret_expr(const expr_t* expr, const char** out_err);
 static object_t* interpret_function_call(object_t* callee, list_object_t* args, const char** out_err);
 
-static environment_t env = { 0 };
-static environment_t globals = { 0 };
+static interpreter_state_t state = { 0 };
 
 void init_interpreter()
 {
-    environment_destroy(&env);
-    environment_destroy(&globals);
+    environment_destroy(&state.env);
+    environment_destroy(&state.globals);
 
-    environment_init(&globals, NULL);
+    environment_init(&state.globals, NULL);
     {
         callable_data_t func = { 0 };
         func.type = CALLABLE_NATIVE_FUN;
@@ -38,16 +36,16 @@ void init_interpreter()
         obj->type = OBJECT_CALLABLE;
         obj->val.call = func;
 
-        environment_define(&globals, "clock", obj);
+        environment_define(&state.globals, "clock", obj);
     }
 
-    env = globals;
+    state.env = state.globals;
 }
 
 void destroy_interpreter()
 {
     gc_free_objects();
-    environment_destroy(&env);
+    environment_destroy(&state.env);
 }
 
 void interpret(const list_stmt_t* stmts)
@@ -62,7 +60,7 @@ void interpret(const list_stmt_t* stmts)
             break;
         }
 
-        gc_run(&env);
+        gc_run(&state.env);
     }
 }
 
@@ -117,7 +115,7 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
             val->type = OBJECT_NIL;
         }
 
-        if (!environment_define(&env, decl->name.lexeme, val))
+        if (!environment_define(&state.env, decl->name.lexeme, val))
         {
             err = "Variable with this name already exists.";
         }
@@ -127,8 +125,8 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
     case STMT_BLOCK:
     {
         const stmt_block_t* block = (stmt_block_t*)stmt;
-        environment_t prev_env = env;
-        environment_init(&env, &prev_env);
+        environment_t prev_env = state.env;
+        environment_init(&state.env, &prev_env);
 
         for (int i = 0; i < block->stmts.len; i++)
         {
@@ -142,8 +140,8 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
         }
 
         // TODO(omar): remove this when we have a GC
-        environment_destroy(&env);
-        env = prev_env;
+        environment_destroy(&state.env);
+        state.env = prev_env;
     }
     break;
 
@@ -214,7 +212,7 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
         callable->arity = s->params.len;
         callable->call = fsstd_call_user_fun;
 
-        environment_define(&globals, s->name.lexeme, fun);
+        environment_define(&state.globals, s->name.lexeme, fun);
     }
     break;
     }
@@ -289,7 +287,7 @@ static object_t* interpret_expr(const expr_t* expr, const char** out_err)
             break;
         }
 
-        environment_assign(&env, e->name.lexeme, val);
+        environment_assign(&state.env, e->name.lexeme, val);
         obj = val;
     }
     break;
@@ -575,7 +573,7 @@ static object_t* interpret_expr(const expr_t* expr, const char** out_err)
     case EXPR_VAR:
     {
         expr_var_t* e = (expr_var_t*)expr;
-        obj = environment_get(&env, e->name.lexeme);
+        obj = environment_get(&state.env, e->name.lexeme);
     }
     break;
 
