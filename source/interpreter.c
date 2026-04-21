@@ -16,7 +16,7 @@
 
 static void interpret_stmt(const stmt_t* stmt, const char** out_err);
 static object_t* interpret_expr(const expr_t* expr, const char** out_err);
-static object_t* interpret_function_call(object_t* callee, list_object_t* args, const char** out_err);
+static object_t* call_callable(object_t* callee, list_object_t* args, const char** out_err);
 
 static interpreter_state_t state = { 0 };
 
@@ -204,11 +204,41 @@ static void interpret_stmt(const stmt_t* stmt, const char** out_err)
     {
         stmt_function_t* s = (stmt_function_t*)stmt;
 
+        stmt_function_t* declaration = calloc(1, sizeof(stmt_function_t));
+        { // Make a copy of the original statement, as the original will be freed in the REPL, this shouldn't be needed when running a file
+            *declaration = *s;
+
+            stmt_block_t* body = calloc(1, sizeof(stmt_block_t));
+            *body = *(s->body);
+
+            declaration->body = body;
+
+            list_token_t params = { 0 };
+            for (int i = 0; i < s->params.len; i++)
+            {
+                token_t tok = s->params.tokens[i];
+                token_t tok_cpy = tok;
+                tok_cpy.lexeme = malloc(sizeof(char) * (strlen(tok.lexeme) + 1));
+                strcpy(tok_cpy.lexeme, tok.lexeme);
+
+                list_token_push(&params, tok_cpy);
+            }
+
+            declaration->params = params;
+
+            token_t name = s->name;
+            name.lexeme = malloc(sizeof(char) * (strlen(s->name.lexeme) + 1));
+            strcpy(name.lexeme, s->name.lexeme);
+
+            declaration->name = name;
+        }
+
         object_t* fun = gc_new_object();
         fun->type = OBJECT_CALLABLE;
 
         callable_data_t* callable = &(fun->val.call);
-        callable->declaration = s;
+        callable->type = CALLABLE_USER_FUN;
+        callable->declaration = declaration;
         callable->arity = s->params.len;
         callable->call = fsstd_call_user_fun;
 
@@ -269,7 +299,7 @@ static object_t* interpret_expr(const expr_t* expr, const char** out_err)
 
         list_object_print(&args);
 
-        obj = interpret_function_call(callee, &args, &err);
+        obj = call_callable(callee, &args, &err);
 
         list_object_free(&args);
     }
@@ -596,7 +626,7 @@ static object_t* interpret_expr(const expr_t* expr, const char** out_err)
     return obj;
 }
 
-static object_t* interpret_function_call(object_t* callee, list_object_t* args, const char** out_err)
+static object_t* call_callable(object_t* callee, list_object_t* args, const char** out_err)
 {
     assert(callee);
     assert(args);
@@ -616,7 +646,7 @@ static object_t* interpret_function_call(object_t* callee, list_object_t* args, 
     }
 
     assert(callable->call);
-    object_t* ret = callable->call(&state, args);
+    object_t* ret = callable->call(&state, callee, args);
     assert(ret);
 
     return ret;

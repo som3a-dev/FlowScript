@@ -6,6 +6,8 @@
  */
 
 #include "object.h"
+#include "list.h"
+#include "statement.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -20,6 +22,23 @@ void object_free(object_t* obj)
     if (obj->type == OBJECT_STRING)
     {
         free(obj->val.str);
+    }
+
+    if (obj->type == OBJECT_CALLABLE)
+    {
+        callable_data_t call = obj->val.call;
+        if (call.declaration)
+        {
+            free(call.declaration->name.lexeme);
+
+            list_token_t params = call.declaration->params;
+            for (int i = 0; i < params.len; i++)
+            {
+                free(params.tokens[i].lexeme);
+            }
+
+            stmt_free((stmt_t*)(call.declaration));
+        }
     }
 }
 

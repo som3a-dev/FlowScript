@@ -34,7 +34,7 @@ typedef struct
 // Holds references to objects, doesn't own lifetime
 typedef struct
 {
-    const object_t** objects;
+    object_t** objects;
     int len;
 } list_object_t;
 

@@ -38,7 +38,7 @@ typedef struct
     callable_type_t type;
 
     int arity;
-    object_t* (*call)(interpreter_state_t* interpreter, list_object_t* args);
+    object_t* (*call)(interpreter_state_t* interpreter, object_t* callee, list_object_t* args);
 
     stmt_function_t* declaration; // for user functions
 } callable_data_t;

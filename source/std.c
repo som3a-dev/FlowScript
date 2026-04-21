@@ -6,9 +6,10 @@
  */
 
 #include "std.h"
+#include "environment.h"
 #include "gc.h"
-#include "interpreter.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -21,10 +22,11 @@ static bool freq_initialized = false;
 static LARGE_INTEGER freq;
 #endif
 
-object_t* fsstd_clock(interpreter_state_t* interpreter, list_object_t* args)
+object_t* fsstd_clock(interpreter_state_t* interpreter, object_t* callee, list_object_t* args)
 {
     (void)args;
     (void)interpreter;
+    (void)callee;
 
     object_t* ret = gc_new_object();
     ret->type = OBJECT_NUMBER;
@@ -48,15 +50,25 @@ object_t* fsstd_clock(interpreter_state_t* interpreter, list_object_t* args)
     return ret;
 }
 
-object_t* fsstd_call_user_fun(interpreter_state_t* interpreter, list_object_t* args)
+object_t* fsstd_call_user_fun(interpreter_state_t* interpreter, object_t* callee, list_object_t* args)
 {
+    (void)args;
+    (void)interpreter;
+    (void)callee;
+
     object_t* ret = gc_new_object();
     ret->type = OBJECT_NIL;
 
-    (void)args;
-    (void)interpreter;
+    stmt_function_t* declaration = callee->val.call.declaration;
+    assert(declaration);
 
-    printf("User function!\n");
+/*    environment_t env = { 0 };
+    environment_init(&env, &(interpreter->globals));
+
+    for (int i = 0; i < declaration->params.len; i++)
+    {
+        environment_define(&env, declaration->params.tokens[i].lexeme, args->objects[i]);
+    }*/
 
     return ret;
 }
